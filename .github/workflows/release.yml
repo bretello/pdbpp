@@ -17,7 +17,7 @@ jobs:
           python-version: '3.9'
       - name: Install requirements
         # TODO: pin
-        run:
+        run: |
           python -m pip install wheel
           python -m pip install check-manifest twine
       - name: Build

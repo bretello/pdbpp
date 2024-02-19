@@ -1164,8 +1164,10 @@ do_shell_called: a?
 # !a?
 \\*\\*\\* SyntaxError:
 # help a
-a(rgs)
-.*
+.*a(rgs)
+"""
+        + ("\n.*" if sys.version_info >= (3, 12) else "")
+        + """
 # c
 """,
     )

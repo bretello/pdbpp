@@ -1916,13 +1916,10 @@ except for when using the function decorator.
             try:
                 editor = os.environ["EDITOR"]
             except KeyError:
-                try:
-                    from shutil import which
-                except ImportError:
-                    from distutils.spawn import find_executable as which
-                editor = which("vim")
-                if editor is None:
-                    editor = which("vi")
+                from shutil import which
+
+                editor = which("vim") or which("vi")
+
             if not editor:
                 raise RuntimeError(
                     "Could not detect editor. Configure it or set $EDITOR."

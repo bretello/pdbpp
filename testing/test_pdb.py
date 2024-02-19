@@ -234,8 +234,6 @@ shortcuts = [
     ("<COLORRESET>", r"\^\[\[00m"),
     ("<PYGMENTSRESET>", r"\^\[\[39[^m]*m"),
     ("NUM", " *[0-9]+"),
-    # Optional message with Python 2.7 (e.g. "--Return--"), not using Pdb.message.
-    ("<PY27_MSG>", "\n.*" if sys.version_info < (3,) else ""),
 ]
 
 
@@ -255,9 +253,8 @@ def run_func(func, expected, terminal_size=None):
     # Remove comments.
     expected = [re.split(r"\s+###", line)[0] for line in expected]
     commands = extract_commands(expected)
-    expected = list(map(cook_regexp, expected))
+    expected = map(cook_regexp, expected)
 
-    # Explode newlines from pattern replacements (PY27_MSG).
     flattened = []
     for line in expected:
         if line == "":
@@ -2269,7 +2266,7 @@ NUM             print(a)
 NUM             set_trace(cleanup=False)
 NUM  ->         return a
 # n
-<CLEARSCREEN><PY27_MSG>
+<CLEARSCREEN>
 [NUM] > .*fn()->1, 5 frames hidden
 
 NUM         def fn():
@@ -2305,7 +2302,7 @@ NUM                 set_trace(cleanup=cleanup)
 NUM  ->             print(cleanup)
 # n
 <CLEARSCREEN>
-True<PY27_MSG>
+True
 [NUM] > .*inner()->None, 5 frames hidden
 
 NUM             def inner(cleanup):
@@ -2320,7 +2317,7 @@ NUM                 set_trace(cleanup=cleanup)
 NUM  ->             print(cleanup)
 # n
 <CLEARSCREEN>
-False<PY27_MSG>
+False
 [NUM] > .*inner()->None, 5 frames hidden
 
 NUM             def inner(cleanup):
@@ -2540,7 +2537,7 @@ NUM                 return 40 \\+ 2
 # retval
 \\*\\*\\* Not yet returned!
 # r
-<CLEARSCREEN><PY27_MSG>
+<CLEARSCREEN>
 [NUM] > {RE_THIS_FILE_CANONICAL}(NUM)returns()->42, 5 frames hidden
 
 NUM             def returns():
@@ -2582,7 +2579,7 @@ NUM                 raise InnerTestException()
 NUM             def throws():
 NUM  ->             raise InnerTestException()
 # n
-<CLEARSCREEN><PY27_MSG>
+<CLEARSCREEN>
 [NUM] > .*throws(), 5 frames hidden
 
 NUM             def throws():
@@ -2623,7 +2620,7 @@ NUM  ->         __exception__ = "foo"  # noqa: F841
 NUM             set_trace(cleanup=False)
 ValueError: very long excmsg\\nvery long excmsg\\nvery long e…
 # c
-<PY27_MSG>[NUM] > .*fn()->None, 5 frames hidden
+[NUM] > .*fn()->None, 5 frames hidden
 
 NUM         def fn():
 NUM             outer()

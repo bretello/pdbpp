@@ -64,7 +64,7 @@ jobs:
       - name: set PY_CACHE_KEY
         run: echo "PY_CACHE_KEY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
       - name: Cache .tox
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
           key: "tox|${{ matrix.os }}|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"

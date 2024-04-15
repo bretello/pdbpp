@@ -2476,7 +2476,7 @@ def test_sticky_dunder_exception_with_highlight():
 <COLORCURLINE>  ->         raises().*
 <COLORLNUM>InnerTestException: <COLORRESET>
 # c
-    """.format(
+    """.format( # noqa: UP032
         filename=RE_THIS_FILE_CANONICAL,
     ))
 

@@ -195,10 +195,10 @@ class ArgWithCount(str):
         return obj
 
     def __repr__(self):
-        return "<{} cmd_count={!r} value={}>".format(
-            self.__class__.__name__,
-            self.cmd_count,
-            super().__repr__(),
+        return (
+            f"<{self.__class__.__name__}"
+            f" cmd_count={self.cmd_count!r}"
+            f" value={super().__repr__()}>"
         )
 
 

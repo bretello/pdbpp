@@ -1451,6 +1451,12 @@ do_shell_called: 'c'
 
 def test_parseline_with_rc_commands(tmpdir):
     """Test that parseline handles execution of rc lines during setup."""
+    pdbrc_read_fixed = (
+        # https://github.com/python/cpython/issues/90095
+        (sys.version_info >= (3, 11, 9) and sys.version_info <= (3, 12, 1))
+        or sys.version_info >= (3, 12, 2)
+    )
+
     with tmpdir.as_cwd():
         with open(".pdbrc", "w") as f:
             f.writelines(
@@ -1467,11 +1473,24 @@ def test_parseline_with_rc_commands(tmpdir):
         check(
             fn,
             """
---Return--
-'readrc'
+--Return--"""
+            + (
+                """
+'readrc'"""
+                if not pdbrc_read_fixed
+                else ""
+            )
+            + """
 [NUM] > .*fn()->None
 -> set_trace(readrc=True)
-   5 frames hidden .*
+   5 frames hidden .*"""
+            + (
+                ""
+                if not pdbrc_read_fixed
+                else """
+'readrc'"""
+            )
+            + """
 # alias myalias
 myalias = print(%1)
 # !!alias myalias
@@ -4261,6 +4280,10 @@ Breakpoint . at .*:{lineno + 8}
 def test_pdbrc_continue(tmpdirhome):
     """Test that interaction is skipped with continue in pdbrc."""
     assert os.getcwd() == str(tmpdirhome)
+    pdbrc_read_fixed = (  # https://github.com/python/cpython/issues/90095
+        (sys.version_info >= (3, 11, 9) and sys.version_info <= (3, 12, 1))
+        or sys.version_info >= (3, 12, 2)
+    )
     with open(".pdbrc", "w") as f:
         f.writelines([
             "p 'from_pdbrc'\n",
@@ -4271,7 +4294,11 @@ def test_pdbrc_continue(tmpdirhome):
         set_trace(readrc=True)
         print("after_set_trace")
 
-    check(fn, """
+    check(fn, ("""
+[NUM] > .*fn()
+-> print("after_set_trace")
+   5 frames hidden .*""" if pdbrc_read_fixed else "") +
+"""
 'from_pdbrc'
 after_set_trace
 """)

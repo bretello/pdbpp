@@ -1221,8 +1221,14 @@ def test_frame():
 -> b()
 # f 0
 [ 0] > .*()
--> .*
-# f -1
+"""
+        + (
+            """-> .*
+"""
+            if sys.platform == "win32" and sys.version_info < (3, 11)
+            else ""
+        )
+        + f"""# f -1
 [{len(traceback.extract_stack())}] > .*c()
 -> return
 # c
@@ -1361,14 +1367,20 @@ def test_top_bottom():
 
     check(
         a,
-        f"""
+        """
 [NUM] > .*c()
 -> return
    5 frames hidden .*
 # top
 [ 0] > .*()
--> .*
-# bottom
+"""
+        + (
+            """-> .*
+"""
+            if sys.platform == "win32" and sys.version_info < (3, 11)
+            else ""
+        )
+        + f"""# bottom
 [{len(traceback.extract_stack())}] > .*c()
 -> return
 # c
@@ -5476,9 +5488,28 @@ def test_do_bt():
         set_trace()
 
     expected_bt = []
+    _entry: traceback.FrameSummary
     for i, _entry in enumerate(traceback.extract_stack()[:-3]):
-        expected_bt.append("  [%2d] .*" % i)
+        expected_bt.append(f"  [{i:2d}] .*")
+
+        if sys.platform == "win32" and sys.version_info >= (3, 11) and (
+                _entry.filename == "<frozen runpy>" and
+                any(
+                    _entry.name == name for name in
+                    (
+                        "_run_module_as_main",
+                        "_run_code",
+                    )
+                )
+            ):
+            # In this case, the first two frames of the traceback look like this:
+            #   [ 0] <frozen runpy>(198)_run_module_as_main()
+            #   [ 1] <frozen runpy>(88)_run_code()
+            # meaning we will not need the .* regex to match code for these frames
+            continue
+
         expected_bt.append("  .*")
+
 
     check(fn, r"""
 --Return--
@@ -5500,8 +5531,26 @@ def test_do_bt_highlight():
         set_trace(Config=ConfigWithHighlight)
 
     expected_bt = []
+    _entry: traceback.FrameSummary
     for i, _entry in enumerate(traceback.extract_stack()[:-3]):
-        expected_bt.append("  [%2d] .*" % i)
+        expected_bt.append(f"  [{i:2d}] .*")
+
+        if sys.platform == "win32" and sys.version_info >= (3, 11) and (
+                _entry.filename == "<frozen runpy>" and
+                any(
+                    _entry.name == name for name in
+                    (
+                        "_run_module_as_main",
+                        "_run_code",
+                    )
+                )
+            ):
+            # In this case, the first two frames of the traceback look like this:
+            #   [ 0] <frozen runpy>(198)_run_module_as_main()
+            #   [ 1] <frozen runpy>(88)_run_code()
+            # meaning we will not need the .* regex to match code for these frames
+            continue
+
         expected_bt.append("  .*")
 
     check(fn, r"""
@@ -5524,8 +5573,26 @@ def test_do_bt_pygments():
         set_trace(Config=ConfigWithPygments)
 
     expected_bt = []
+    _entry: traceback.FrameSummary
     for i, _entry in enumerate(traceback.extract_stack()[:-3]):
-        expected_bt.append("  [%2d] .*" % i)
+        expected_bt.append(f"  [{i:2d}] .*")
+
+        if sys.platform == "win32" and sys.version_info >= (3, 11) and (
+                _entry.filename == "<frozen runpy>" and
+                any(
+                    _entry.name == name for name in
+                    (
+                        "_run_module_as_main",
+                        "_run_code",
+                    )
+                )
+            ):
+            # In this case, the first two frames of the traceback look like this:
+            #   [ 0] <frozen runpy>(198)_run_module_as_main()
+            #   [ 1] <frozen runpy>(88)_run_code()
+            # meaning we will not need the .* regex to match code for these frames
+            continue
+
         expected_bt.append("  .*")
 
     check(fn, r"""

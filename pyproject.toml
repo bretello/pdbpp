@@ -30,3 +30,34 @@ testpaths = ["testing"]
 
 [tool.setuptools_scm]
 write_to = "src/pdbpp_utils/_version.py"
+
+
+[tool.mypy]
+# Error output
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+show_traceback = true
+pretty = true
+check_untyped_defs = true
+# Warnings
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+strict_equality = true
+no_implicit_optional = true
+warn_unused_configs = true
+files = ["src", "testing"]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+"fancycompleter"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["pdbpp", "testing"]
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]

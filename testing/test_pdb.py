@@ -1461,7 +1461,7 @@ def test_parseline_with_rc_commands(tmpdir):
         # https://github.com/python/cpython/issues/90095
         (sys.version_info >= (3, 11, 9) and sys.version_info <= (3, 12, 1))
         or sys.version_info >= (3, 12, 2)
-    )
+    ) and sys.platform != "darwin"
 
     with tmpdir.as_cwd():
         with open(".pdbrc", "w") as f:
@@ -4289,7 +4289,7 @@ def test_pdbrc_continue(tmpdirhome):
     pdbrc_read_fixed = (  # https://github.com/python/cpython/issues/90095
         (sys.version_info >= (3, 11, 9) and sys.version_info <= (3, 12, 1))
         or sys.version_info >= (3, 12, 2)
-    )
+    ) and sys.platform != "darwin"
     with open(".pdbrc", "w") as f:
         f.writelines([
             "p 'from_pdbrc'\n",

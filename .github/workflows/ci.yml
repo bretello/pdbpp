@@ -15,7 +15,6 @@ on:
     - cron: "20 4 * * 2" # once a week
 
 env:
-  PYTEST_ADDOPTS: "-vv --cov-report=xml:coverage-ci.xml"
   PIP_DISABLE_PIP_VERSION_CHECK: true
 
 defaults:
@@ -31,28 +30,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.8"]
-        tox_env: ["coverage"]
+        os: [ubuntu-20.04, windows-latest, macos-latest]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         include:
-          - tox_env: "py38-ipython-coverage"
-            os: ubuntu-latest
-            python: "3.8"
-          - tox_env: "py38-editable-coverage"
-            os: ubuntu-latest
-            python: "3.8"
-          - tox_env: "py39-coverage"
-            os: ubuntu-latest
-            python: "3.9"
-          - tox_env: "py310-coverage"
-            python: "3.10"
-            os: ubuntu-latest
-          - tox_env: "py311-coverage"
-            python: "3.11"
-            os: ubuntu-latest
-          - tox_env: "py312-coverage"
-            python: "3.12"
-            os: ubuntu-latest
+          - { os: ubuntu-latest, python: "pypy3.9" }
+          - { os: ubuntu-latest, python: "pypy3.10" }
 
     steps:
       - uses: actions/checkout@v4
@@ -63,23 +45,20 @@ jobs:
 
       - name: set PY_CACHE_KEY
         run: echo "PY_CACHE_KEY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
-      - name: Cache .tox
+
+      - name: Cache .nox
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/.tox/${{ matrix.tox_env }}
-          key: "tox|${{ matrix.os }}|${{ matrix.tox_env }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('tox.ini', 'setup.*') }}"
+          path: ${{ github.workspace }}/.nox/tests-${{ matrix.python }}
+          key: "nox|${{ matrix.os }}|tests-${{ matrix.python }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('noxfile.py', 'setup.py', 'pyproject.toml') }}"
 
       - name: Update tools and print info
         run: |
           pip install -U pip setuptools virtualenv
           pip list
 
-      - name: Install tox
-        run: pip install tox
-
-      - name: Setup tox environment
-        id: setup_tox
-        run: tox --notest -v -e ${{ matrix.tox_env }}
+      - name: Install nox
+        run: pip install nox==2023.4.22
 
       - name: Test
         env:
@@ -88,15 +67,16 @@ jobs:
         run: |
           if [[ ${{ matrix.os }} = "windows-latest" ]]; then
             # UTF-8 mode for Windows (https://docs.python.org/3/using/windows.html#utf-8-mode).
-            export PYTHONUTF8=1 TOX_TESTENV_PASSENV=PYTHONUTF8
+            export PYTHONUTF8=1
           fi
-          python -m tox -v -e ${{ matrix.tox_env }}
+          nox -v -s "tests-${{ matrix.python }}" -- --cov-report=xml
 
       - name: Report coverage
-        if: always() && (contains(matrix.tox_env, 'coverage') && (steps.setup_tox.outcome == 'success'))
         uses: codecov/codecov-action@v3
         with:
-          files: ./coverage-ci.xml
           flags: ${{ runner.os }}
-          name: ${{ matrix.tox_env }}
+          name: ${{ matrix.python }}
           fail_ci_if_error: true
+
+      - name: Build package
+        run: nox -s build

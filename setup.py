@@ -53,6 +53,9 @@ setup(
     extras_require={
         "testing": [
             "pytest",
+            "pytest-cov",
+            "ipython",
+            "pexpect",
         ],
     },
     setup_requires=["setuptools_scm"],

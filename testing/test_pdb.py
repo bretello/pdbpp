@@ -302,9 +302,7 @@ def check(func, expected, terminal_size=None):
                 try:
                     ok = re.match(pattern, string)
                 except re.error as exc:
-                    raise ValueError(
-                        f"re.match failed for {pattern!r}: {exc!r}"
-                    )  # noqa: B904
+                    raise ValueError(f"re.match failed for {pattern!r}: {exc!r}")  # noqa: B904
         else:
             ok = False
             if pattern is None:
@@ -1286,9 +1284,7 @@ mocked_inspect: 'r"foo"'
 # u"foo"?
 mocked_inspect: 'u"foo"'
 # c
-""".format(
-            bytestring=b"string", unicodestring="string"
-        ),
+""".format(bytestring=b"string", unicodestring="string"),
     )
 
 

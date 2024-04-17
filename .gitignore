@@ -25,8 +25,12 @@ env/
 .env/
 3rdparty/
 .tox
+.nox
 .cache
 .coverage
 .ropeproject
 *.sublime-*
 .env/
+
+coverage.xml
+.coverage*

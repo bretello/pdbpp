@@ -294,6 +294,12 @@ def check(func, expected, terminal_size=None):
     maxlen = max(map(len, expected)) if expected else 0
     all_ok = True
     print()
+    print(
+        pdbpp.Color.set(pdbpp.Color.darkgreen, "Expected".ljust(maxlen + 1)),
+        "| ",
+        pdbpp.Color.set(pdbpp.Color.yellow, "Actual"),
+    )
+    print("=" * (2 * maxlen + 3))
     for pattern, string in zip_longest(expected, lines):
         if pattern is not None and string is not None:
             if is_prompt(pattern) and is_prompt(string):

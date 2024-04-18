@@ -2074,9 +2074,9 @@ class TestListWithChangedSource:
     """Uses the cached (current) code."""
 
     @pytest.fixture(autouse=True)
-    def setup_myfile(self, testdir):
-        testdir.makepyfile(
-            myfile="""
+    def setup_myfile(self, tmpdir, monkeypatch):
+        with open(os.path.join(tmpdir, "myfile.py"), "w") as fh:
+            fh.write(textwrap.dedent("""
             from pdbpp import set_trace
 
             def rewrite_file():
@@ -2092,12 +2092,15 @@ class TestListWithChangedSource:
                 after_settrace()
                 set_trace()
                 a = 3
-            """)
-        testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
-        testdir.syspathinsert()
+            """))
+        monkeypatch.setenv("PDBPP_COLORS", "0")
+        monkeypatch.syspath_prepend(tmpdir.strpath)
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
     def test_list_with_changed_source(self):
+        if "coverage" in sys.modules:
+            pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
+
         from myfile import fn
 
         check(fn, r"""
@@ -2130,12 +2133,15 @@ class TestListWithChangedSource:
     (Pdb++) c
     """)
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
     def test_longlist_with_changed_source(self):
+        if "coverage" in sys.modules:
+            pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
+
         from myfile import fn
 
         check(fn, r"""
-    [NUM] > .*fn()
+    [NUM] > .*myfile.py(NUM)fn()
     -> after_settrace()
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) ll

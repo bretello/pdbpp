@@ -1231,7 +1231,8 @@ def test_frame():
         + (
             """-> .*
 """
-            if sys.platform == "win32" and sys.version_info < (3, 11)
+            if sys.platform != "win32"
+            or (sys.platform == "win32" and sys.version_info < (3, 11))
             else ""
         )
         + f"""# f -1
@@ -1383,7 +1384,8 @@ def test_top_bottom():
         + (
             """-> .*
 """
-            if sys.platform == "win32" and sys.version_info < (3, 11)
+            if sys.platform != "win32"
+            or (sys.platform == "win32" and sys.version_info < (3, 11))
             else ""
         )
         + f"""# bottom

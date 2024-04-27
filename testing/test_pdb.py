@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # noqa: B011
 import bdb
 import inspect
@@ -12,6 +14,7 @@ import traceback
 from io import BytesIO
 from itertools import zip_longest
 from shlex import quote
+from typing import Callable
 
 import pytest
 
@@ -143,7 +146,11 @@ def xpm():
     pdbpp.xpm(PdbTest)
 
 
-def runpdb(func, input, terminal_size=None):
+def runpdb(
+    func: Callable,
+    input: list[str],
+    terminal_size: tuple[int, int] | None = None,
+) -> list[str]:
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
@@ -153,9 +160,7 @@ def runpdb(func, input, terminal_size=None):
     class MyBytesIO(BytesIO):
         """write accepts unicode or bytes"""
 
-        encoding = "ascii"
-
-        def __init__(self, encoding="utf-8"):
+        def __init__(self, encoding: str = "utf-8"):
             self.encoding = encoding
 
         def write(self, msg):
@@ -203,7 +208,7 @@ def runpdb(func, input, terminal_size=None):
     return stdout.get_unicode_value().splitlines()
 
 
-def is_prompt(line):
+def is_prompt(line: str) -> bool:
     prompts = {"# ", "(#) ", "((#)) ", "(((#))) ", "(Pdb) ", "(Pdb++) ", "(com++) "}
     for prompt in prompts:
         if line.startswith(prompt):
@@ -211,8 +216,8 @@ def is_prompt(line):
     return False
 
 
-def extract_commands(lines):
-    cmds = []
+def extract_commands(lines: list[str]) -> list[str]:
+    cmds: list[str] = []
     for line in lines:
         prompt_len = is_prompt(line)
         if prompt_len:
@@ -244,7 +249,7 @@ def cook_regexp(s):
     return s
 
 
-def run_func(func, expected, terminal_size=None):
+def run_func(func, expected, terminal_size=None) -> tuple[list[str], list[str]]:
     """Runs given function and returns its output along with expected patterns.
 
     It does not make any assertions. To compare func's output with expected
@@ -2075,7 +2080,7 @@ class TestListWithChangedSource:
 
     @pytest.fixture(autouse=True)
     def setup_myfile(self, tmpdir, monkeypatch):
-        with open(os.path.join(tmpdir, "myfile.py"), "w") as fh:
+        with open(tmpdir / "myfile.py", "w") as fh:
             fh.write(textwrap.dedent("""
             from pdbpp import set_trace
 
@@ -5391,13 +5396,14 @@ def test_rebind_globals_kwonly():
 
 
 def test_rebind_globals_annotations():
-    exec("def func(ann: str = None): pass", globals())
+    exec("def func(ann: str = None) -> None: pass", globals())
     func = globals()["func"]
 
     sig = str(inspect.signature(func))
     assert sig in (
-         "(ann: str = None)",
-         "(ann:str=None)",
+         "(ann: 'str' = None) -> 'None'",
+         "(ann: str = None) -> None",
+         "(ann:str=None)->None",
     )
     new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig

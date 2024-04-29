@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # noqa: B011
 import bdb
 import inspect
@@ -12,6 +14,8 @@ import traceback
 from io import BytesIO
 from itertools import zip_longest
 from shlex import quote
+
+from typing import Callable
 
 import pdbpp
 import pytest
@@ -142,7 +146,11 @@ def xpm():
     pdbpp.xpm(PdbTest)
 
 
-def runpdb(func, input, terminal_size=None):
+def runpdb(
+    func: Callable,
+    input: list[str],
+    terminal_size: tuple[int, int] | None = None,
+) -> list[str]:
     oldstdin = sys.stdin
     oldstdout = sys.stdout
     oldstderr = sys.stderr
@@ -152,9 +160,7 @@ def runpdb(func, input, terminal_size=None):
     class MyBytesIO(BytesIO):
         """write accepts unicode or bytes"""
 
-        encoding = "ascii"
-
-        def __init__(self, encoding="utf-8"):
+        def __init__(self, encoding: str = "utf-8"):
             self.encoding = encoding
 
         def write(self, msg):
@@ -202,7 +208,7 @@ def runpdb(func, input, terminal_size=None):
     return stdout.get_unicode_value().splitlines()
 
 
-def is_prompt(line):
+def is_prompt(line: str) -> bool:
     prompts = {"# ", "(#) ", "((#)) ", "(((#))) ", "(Pdb) ", "(Pdb++) ", "(com++) "}
     for prompt in prompts:
         if line.startswith(prompt):
@@ -210,8 +216,8 @@ def is_prompt(line):
     return False
 
 
-def extract_commands(lines):
-    cmds = []
+def extract_commands(lines: list[str]) -> list[str]:
+    cmds: list[str] = []
     for line in lines:
         prompt_len = is_prompt(line)
         if prompt_len:
@@ -243,7 +249,7 @@ def cook_regexp(s):
     return s
 
 
-def run_func(func, expected, terminal_size=None):
+def run_func(func, expected, terminal_size=None) -> tuple[list[str], list[str]]:
     """Runs given function and returns its output along with expected patterns.
 
     It does not make any assertions. To compare func's output with expected
@@ -1231,7 +1237,8 @@ def test_frame():
         + (
             """-> .*
 """
-            if sys.platform == "win32" and sys.version_info < (3, 11)
+            if sys.platform != "win32"
+            or (sys.platform == "win32" and sys.version_info < (3, 11))
             else ""
         )
         + f"""# f -1
@@ -1383,7 +1390,8 @@ def test_top_bottom():
         + (
             """-> .*
 """
-            if sys.platform == "win32" and sys.version_info < (3, 11)
+            if sys.platform != "win32"
+            or (sys.platform == "win32" and sys.version_info < (3, 11))
             else ""
         )
         + f"""# bottom
@@ -2071,9 +2079,9 @@ class TestListWithChangedSource:
     """Uses the cached (current) code."""
 
     @pytest.fixture(autouse=True)
-    def setup_myfile(self, testdir):
-        testdir.makepyfile(
-            myfile="""
+    def setup_myfile(self, tmpdir, monkeypatch):
+        with open(tmpdir / "myfile.py", "w") as fh:
+            fh.write(textwrap.dedent("""
             from pdbpp import set_trace
 
             def rewrite_file():
@@ -2089,12 +2097,15 @@ class TestListWithChangedSource:
                 after_settrace()
                 set_trace()
                 a = 3
-            """)
-        testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
-        testdir.syspathinsert()
+            """))
+        monkeypatch.setenv("PDBPP_COLORS", "0")
+        monkeypatch.syspath_prepend(tmpdir.strpath)
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
     def test_list_with_changed_source(self):
+        if "coverage" in sys.modules:
+            pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
+
         from myfile import fn
 
         check(fn, r"""
@@ -2127,12 +2138,15 @@ class TestListWithChangedSource:
     (Pdb++) c
     """)
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
     def test_longlist_with_changed_source(self):
+        if "coverage" in sys.modules:
+            pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
+
         from myfile import fn
 
         check(fn, r"""
-    [NUM] > .*fn()
+    [NUM] > .*myfile.py(NUM)fn()
     -> after_settrace()
        5 frames hidden (try 'help hidden_frames')
     (Pdb++) ll
@@ -5382,13 +5396,14 @@ def test_rebind_globals_kwonly():
 
 
 def test_rebind_globals_annotations():
-    exec("def func(ann: str = None): pass", globals())
+    exec("def func(ann: str = None) -> None: pass", globals())
     func = globals()["func"]
 
     sig = str(inspect.signature(func))
     assert sig in (
-         "(ann: str = None)",
-         "(ann:str=None)",
+         "(ann: 'str' = None) -> 'None'",
+         "(ann: str = None) -> None",
+         "(ann:str=None)->None",
     )
     new = pdbpp.rebind_globals(func, globals())
     assert str(inspect.signature(new)) == sig

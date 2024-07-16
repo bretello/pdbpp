@@ -14,6 +14,10 @@ on:
   schedule:
     - cron: "20 4 * * 2" # once a week
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: true
 

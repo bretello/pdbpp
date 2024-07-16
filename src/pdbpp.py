@@ -6,6 +6,8 @@ This module extends the stdlib pdb in numerous ways: look at the README for
 more details on pdb++ features.
 """
 
+from __future__ import annotations
+
 import code
 import codecs
 import contextlib
@@ -139,14 +141,13 @@ class DefaultConfig:
         pass
 
 
-def setbgcolor(line, color):
-    # hack hack hack
-    # add a bgcolor attribute to all escape sequences found
-    import re
+def set_color(line: str, color: str | int):
+    """Set the given color, also adding it to all escape sequences found."""
 
-    setbg = "\x1b[%sm" % color
-    regexbg = "\\1;%sm" % color
-    result = setbg + re.sub("(\x1b\\[.*?)m", regexbg, line) + "\x1b[00m"
+    set_color = f"\x1b[{color}m"
+    pattern, replacement = "(\x1b\\[.*?)m", rf"\1;{color}m"
+    clear = "\x1b[00m"
+    result = set_color + re.sub(pattern, replacement, line) + clear
     if os.environ.get("TERM") == "eterm-color":
         # it seems that emacs' terminal has problems with some ANSI escape
         # sequences. Eg, 'ESC[44m' sets the background color in all terminals
@@ -158,8 +159,8 @@ def setbgcolor(line, color):
         # want to change it.  These lines seems to work fine with the ANSI
         # codes produced by pygments, but they are surely not a general
         # solution.
-        result = result.replace(setbg, "\x1b[37;%dm" % color)
-        result = result.replace("\x1b[00;%dm" % color, "\x1b[37;%dm" % color)
+        result = result.replace(set_color, f"\x1b[37;{color}m")
+        result = result.replace(f"\x1b[00;{color}m", f"\x1b[37;{color}m")
         result = result.replace("\x1b[39;49;00;", "\x1b[37;")
     return result
 
@@ -1297,7 +1298,7 @@ except for when using the function decorator.
                 if marker == "->" and set_bg:
                     len_visible = len(RE_COLOR_ESCAPES.sub("", line))
                     line = line + " " * (width - len_visible)
-                    line = setbgcolor(line, self.config.current_line_color)
+                    line = set_color(line, self.config.current_line_color)
                 new_lines.append(line)
         else:
             for _i, line in enumerate(lines):

@@ -1142,12 +1142,12 @@ except for when using the function decorator.
                     lines, lineno = inspect.getsourcelines(self.curframe)
                 except Exception as e:
                     print(
-                        "** Error in inspect.getsourcelines: %s **" % e,
+                        f"** Error in inspect.getsourcelines: {e} **",
                         file=self.stdout,
                     )
                     return
         except OSError as e:
-            print("** Error: %s **" % e, file=self.stdout)
+            print(f"** Error: {e} **", file=self.stdout)
             return
         if linerange:
             start, end = linerange
@@ -1519,7 +1519,7 @@ except for when using the function decorator.
         try:
             del self._get_display_list()[arg]
         except KeyError:
-            print("** %s not in the display list **" % arg, file=self.stdout)
+            print(f"** {arg} not in the display list **", file=self.stdout)
 
     def _print_if_sticky(self):
         if self.sticky and not self.commands_defining:
@@ -1649,7 +1649,7 @@ except for when using the function decorator.
             try:
                 start, end = map(int, arg.split())
             except ValueError:
-                print("** Error when parsing argument: %s **" % arg, file=self.stdout)
+                print(f"** Error when parsing argument: {arg} **", file=self.stdout)
                 return
             self.sticky = True
             self.sticky_ranges[self.curframe] = start, end + 1

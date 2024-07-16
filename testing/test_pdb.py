@@ -89,10 +89,10 @@ class PdbTest(pdbpp.Pdb):
         self.nosigint = nosigint
 
     def _open_editor(self, editcmd):
-        print("RUN %s" % editcmd)
+        print(f"RUN {editcmd}")
 
     def _open_stdin_paste(self, cmd, lineno, filename, text):
-        print("RUN %s +%d" % (cmd, lineno))
+        print(f"RUN {cmd} +{lineno}")
         print(repr(text))
 
     def do_shell(self, arg):
@@ -102,7 +102,7 @@ class PdbTest(pdbpp.Pdb):
         via parseline unnecessarily, which would cause unexpected results
         if somebody uses it.
         """
-        print("do_shell_called: %r" % arg)
+        print(f"do_shell_called: '{arg}'")
         return self.default(arg)
 
 
@@ -197,7 +197,7 @@ def runpdb(func, input, terminal_size=None):
     if stderr:
         # Make it available for pytests output capturing.
         print(stdout.get_unicode_value())
-        raise AssertionError("Unexpected output on stderr: %s" % stderr)
+        raise AssertionError(f"Unexpected output on stderr: {stderr}")
 
     return stdout.get_unicode_value().splitlines()
 
@@ -1136,7 +1136,7 @@ def test_question_mark_unit(capsys, LineMatcher):
 
 def test_single_question_mark_with_existing_command(monkeypatch):
     def mocked_inspect(self, arg):
-        print("mocked_inspect: %r" % arg)
+        print(f"mocked_inspect: '{arg}'")
 
     monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
 
@@ -1245,7 +1245,7 @@ def test_frame():
 
 def test_fstrings(monkeypatch):
     def mocked_inspect(self, arg):
-        print("mocked_inspect: %r" % arg)
+        print(f"mocked_inspect: {arg}")
 
     monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
 
@@ -1262,7 +1262,7 @@ def test_fstrings(monkeypatch):
 # f"fstring"
 'fstring'
 # f"foo"?
-mocked_inspect: 'f"foo"'
+mocked_inspect: f"foo"
 # c
 """,
     )
@@ -1270,7 +1270,7 @@ mocked_inspect: 'f"foo"'
 
 def test_prefixed_strings(monkeypatch):
     def mocked_inspect(self, arg):
-        print("mocked_inspect: %r" % arg)
+        print(f"mocked_inspect: {arg}")
 
     monkeypatch.setattr(PdbTest, "do_inspect", mocked_inspect)
 
@@ -1291,11 +1291,11 @@ def test_prefixed_strings(monkeypatch):
 # r"string"
 'string'
 # b"foo"?
-mocked_inspect: 'b"foo"'
+mocked_inspect: b"foo"
 # r"foo"?
-mocked_inspect: 'r"foo"'
+mocked_inspect: r"foo"
 # u"foo"?
-mocked_inspect: 'u"foo"'
+mocked_inspect: u"foo"
 # c
 """.format(bytestring=b"string", unicodestring="string"),
     )
@@ -2529,7 +2529,7 @@ def test_format_exc_for_sticky():
             raise exc_from_str
 
     assert f((UnprintableExc, UnprintableExc())) == (
-        "UnprintableExc: (unprintable exception: %r)" % exc_from_str
+        f"UnprintableExc: (unprintable exception: {exc_from_str!r})"
     )
 
     class UnprintableExc:
@@ -3167,16 +3167,16 @@ def test_edit():
     return42_lineno = lineno + 2
     call_fn_lineno = lineno + 5
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
 # edit
-RUN emacs \+%d %s
+RUN emacs \+{return42_lineno} {RE_THIS_FILE_QUOTED}
 # c
-""" % (return42_lineno, RE_THIS_FILE_QUOTED))
+""")
 
-    check(bar, r"""
+    check(bar, rf"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
@@ -3184,9 +3184,9 @@ RUN emacs \+%d %s
 [NUM] > .*bar()
 -> fn()
 # edit
-RUN emacs \+%d %s
+RUN emacs \+{call_fn_lineno} {RE_THIS_FILE_QUOTED}
 # c
-""" % (call_fn_lineno, RE_THIS_FILE_QUOTED))
+""")
 
 
 def test_edit_obj():
@@ -3199,43 +3199,41 @@ def test_edit_obj():
         pass
     _, bar_lineno = inspect.getsourcelines(bar)
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
 # edit bar
-RUN emacs \+%d %s
+RUN emacs \+{bar_lineno} {RE_THIS_FILE_CANONICAL_QUOTED}
 # c
-""" % (bar_lineno, RE_THIS_FILE_CANONICAL_QUOTED))
+""")
 
 
 def test_edit_fname_lineno():
     def fn():
         set_trace()
 
-    check(fn, r"""
+    check(fn, rf"""
 --Return--
 [NUM] > .*fn()->None
 -> set_trace()
    5 frames hidden .*
-# edit {fname}
-RUN emacs \+1 {fname_edit}
-# edit {fname}:5
-RUN emacs \+5 {fname_edit}
-# edit {fname}:meh
+# edit {__file__}
+RUN emacs \+1 {RE_THIS_FILE_QUOTED}
+# edit {__file__}:5
+RUN emacs \+5 {RE_THIS_FILE_QUOTED}
+# edit {__file__}:meh
 \*\*\* could not parse filename/lineno
-# edit {fname}:-1
+# edit {__file__}:-1
 \*\*\* could not parse filename/lineno
-# edit {fname} meh:-1
+# edit {__file__} meh:-1
 \*\*\* could not parse filename/lineno
 # edit os.py
-RUN emacs \+1 {os_fname}
+RUN emacs \+1 {re.escape(quote(os.__file__.rstrip("c")))}
 # edit doesnotexist.py
 \*\*\* could not parse filename/lineno
 # c
-""".format(fname=__file__,
-           fname_edit=RE_THIS_FILE_QUOTED,
-           os_fname=re.escape(quote(os.__file__.rstrip("c")))))
+""")
 
 
 def test_put():
@@ -3245,17 +3243,17 @@ def test_put():
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
 # x = 10
 # y = 12
 # put
-RUN epaste \+%d
+RUN epaste \+{start_lineno}
 '        x = 10\\n        y = 12\\n'
 # c
-""" % start_lineno)
+""")
 
 
 def test_paste():
@@ -3270,7 +3268,7 @@ def test_paste():
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 1
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> if 4 != 5:
    5 frames hidden .*
@@ -3278,11 +3276,11 @@ def test_paste():
 hello world
 # paste g()
 hello world
-RUN epaste \+%d
+RUN epaste \+{start_lineno}
 'hello world\\n'
 # c
 hello world
-""" % start_lineno)
+""")
 
 
 def test_put_if():
@@ -3294,17 +3292,17 @@ def test_put_if():
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 3
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> return x
    5 frames hidden .*
 # x = 10
 # y = 12
 # put
-RUN epaste \+%d
+RUN epaste \+{start_lineno}
 .*x = 10\\n            y = 12\\n.
 # c
-""" % start_lineno)
+""")
 
 
 def test_side_effects_free():
@@ -3324,7 +3322,7 @@ def test_put_side_effects_free():
     _, lineno = inspect.getsourcelines(fn)
     start_lineno = lineno + 2
 
-    check(fn, r"""
+    check(fn, rf"""
 [NUM] > .*fn()
 -> return 42
    5 frames hidden .*
@@ -3334,10 +3332,10 @@ def test_put_side_effects_free():
 .*
 # y = 12
 # put
-RUN epaste \+%d
+RUN epaste \+{start_lineno}
 '        y = 12\\n'
 # c
-""" % start_lineno)
+""")
 
 
 def test_enable_disable_via_module():
@@ -4170,12 +4168,12 @@ def test_interaction_restores_previous_sigint_handler():
         while i <= 2:
             sess = PdbTest(nosigint=False)
             sess.set_trace(sys._getframe())
-            print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+            print(f"pdb {i}: {sess._previous_sigint_handler}")
             i += 1
 
     check(fn, """
 [NUM] > .*fn()
--> print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+-> print(f"pdb {i}: {sess._previous_sigint_handler}")
    5 frames hidden .*
 # c
 pdb 1: <built-in function default_int_handler>
@@ -5205,16 +5203,16 @@ def test_locals():
     def fn():
         def f():
             set_trace()
-            print("foo=%s" % foo)  # noqa: F821
+            print(f"{foo=}")  # noqa: F821
             foo = 2  # noqa: F841
 
         f()
 
     check(fn, """
 [NUM] > .*f()
--> print("foo=%s" % foo)
+-> print(f"{foo=}")
    5 frames hidden .*
-# foo = 42
+# foo=42
 # foo
 42
 # pp foo

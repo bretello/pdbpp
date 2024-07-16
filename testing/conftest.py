@@ -120,9 +120,9 @@ def monkeypatch_readline(monkeypatch, readline_param):
             assert readline_param == "readline"
             readline = "readline"
 
-        monkeypatch.setattr("%s.get_line_buffer" % readline, lambda: line)
-        monkeypatch.setattr("%s.get_begidx" % readline, lambda: begidx)
-        monkeypatch.setattr("%s.get_endidx" % readline, lambda: endidx)
+        monkeypatch.setattr(f"{readline}.get_line_buffer", lambda: line)
+        monkeypatch.setattr(f"{readline}.get_begidx", lambda: begidx)
+        monkeypatch.setattr(f"{readline}.get_endidx", lambda: endidx)
 
     return inner
 
@@ -134,7 +134,7 @@ def monkeypatch_pdb_methods(monkeypatch):
 
     for mock_method in ("set_trace", "set_continue"):
         monkeypatch.setattr(
-            "pdbpp.pdb.Pdb.%s" % mock_method, functools.partial(mock, mock_method)
+            f"pdbpp.pdb.Pdb.{mock_method}", functools.partial(mock, mock_method)
         )
 
 

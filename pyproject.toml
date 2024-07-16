@@ -61,3 +61,6 @@ source = ["pdbpp", "testing"]
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pdbpp", "pdbpp_utils"]

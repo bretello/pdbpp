@@ -1,5 +1,6 @@
-import pdbpp
 import pytest
+
+import pdbpp
 
 
 def test_mod_attributeerror():

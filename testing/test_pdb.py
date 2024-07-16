@@ -13,8 +13,9 @@ from io import BytesIO
 from itertools import zip_longest
 from shlex import quote
 
-import pdbpp
 import pytest
+
+import pdbpp
 from pdbpp import DefaultConfig, Pdb, StringIO
 
 from .conftest import skip_with_missing_pth_file
@@ -1104,7 +1105,7 @@ def test_question_mark_unit(capsys, LineMatcher):
     )
 
     # Source for function, indented docstring.
-    def foo():
+    def foo():  # noqa: F811
         """doc_for_foo
 
         3rd line."""

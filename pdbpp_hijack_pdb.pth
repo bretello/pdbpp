@@ -7,5 +7,4 @@
 #    i.e. PDBPP_HIJACK_PDB=0 can be used to disable it.
 # 2. there is not another one already at the beginning
 #    (e.g. via a virtualenv using "include-system-site-packages")
-import os; _pdbpp_path = f"{os.path.sep}_pdbpp_path_hack"
-import sys; sys.path.insert(0, makepath(sitedir, "_pdbpp_path_hack")[0]) if int(os.environ.get('PDBPP_HIJACK_PDB', 1)) and not sys.path[0].endswith(_pdbpp_path) else None
+import os; _pdbpp_path = f"{os.path.sep}_pdbpp_path_hack"; import sys; sys.path.insert(0, makepath(sitedir, "_pdbpp_path_hack")[0]) if int(os.environ.get('PDBPP_HIJACK_PDB', 1)) and not sys.path[0].endswith(_pdbpp_path) else None

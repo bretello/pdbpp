@@ -61,7 +61,7 @@ def import_from_stdlib(name):
     result = types.ModuleType(name)
 
     stdlibdir, _ = os.path.split(code.__file__)
-    pyfile = os.path.join(stdlibdir, name + ".py")
+    pyfile = os.path.join(stdlibdir, f"{name}.py")
     with open(pyfile) as f:
         src = f.read()
     co_module = compile(src, pyfile, "exec", dont_inherit=True)
@@ -870,10 +870,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         return self._highlight(src)
 
     def _format_line(self, lineno, marker, line, lineno_width):
-        lineno = ("%%%dd" % lineno_width) % lineno
+        lineno = f"{lineno:>{lineno_width}}"
         if self.config.highlight:
             lineno = Color.set(self.config.line_number_color, lineno)
-        line = "%s  %2s %s" % (lineno, marker, line)
+        line = f"{lineno}  {marker:>2} {line}"
         return line
 
     def execRcLines(self):
@@ -1012,10 +1012,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                     )
             else:
                 formatted_value = ""
-            self.stdout.write("%-28s %s\n" % (formatted_key, formatted_value))
+            self.stdout.write(f"{formatted_key:28s} {formatted_value}\n")
 
         if with_source:
-            self.stdout.write("%-28s" % Color.set(Color.red, "Source:"))
+            self.stdout.write(f"{Color.set(Color.red, 'Source:'):28s}")
+
             _, lineno, lines = self._get_position_of_obj(obj, quiet=True)
             if lines is None:
                 self.stdout.write(" -\n")
@@ -1550,8 +1551,7 @@ except for when using the function decorator.
             if self.config.show_hidden_frames_count:
                 n = len(self._hidden_frames)
                 if n:
-                    plural = n > 1 and "s" or ""
-                    s += ", %d frame%s hidden" % (n, plural)
+                    s += f", {n} frame{'s' if n>1 else ''} hidden"
             top_lines.append(s)
 
             sticky_range = self.sticky_ranges.get(self.curframe, None)
@@ -1696,7 +1696,8 @@ except for when using the function decorator.
             lprefix = "\n     " + (" " * frame_prefix_width)
 
         # Format stack index (keeping same width across stack).
-        frame_prefix = ("[%%%dd] " % frame_prefix_width) % frame_index
+        frame_prefix = f"[{frame_index:{frame_prefix_width}}] "
+
         marker_frameno = fmt.format(marker=marker, frame_prefix=frame_prefix)
 
         return marker_frameno + self.format_stack_entry(frame_lineno, lprefix)
@@ -1904,7 +1905,7 @@ except for when using the function decorator.
 
         if "%s" not in editor:
             # backward compatibility.
-            return "%s +%d %s" % (editor, lineno, filename)
+            return f"{editor} +{lineno} {filename}"
 
         # Replace %s with filename, %d with lineno; %% becomes %.
         return (
@@ -1964,7 +1965,7 @@ except for when using the function decorator.
 
     def _open_stdin_paste(self, stdin_paste, lineno, filename, text):
         proc = subprocess.Popen(
-            [stdin_paste, "+%d" % lineno, filename], stdin=subprocess.PIPE
+            [stdin_paste, f"+{lineno}", filename], stdin=subprocess.PIPE
         )
         proc.stdin.write(text)
         proc.stdin.close()

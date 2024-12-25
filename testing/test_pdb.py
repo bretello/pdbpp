@@ -2377,19 +2377,19 @@ def test_sticky_range():
     start = lineno + 1
     end = lineno + 3
 
-    check(fn, """
+    check(fn, f"""
 [NUM] > .*fn()
 -> a = 1
    5 frames hidden .*
-# sticky %d %d
+# sticky {start} {end}
 <CLEARSCREEN>
 [NUM] > .*fn(), 5 frames hidden
 
-%d \\s+         set_trace()
+{start} \\s+         set_trace()
 NUM  ->         a = 1
 NUM             b = 2
 # c
-""" % (start, end, start))
+""")
 
 
 def test_sticky_by_default():
@@ -3921,7 +3921,7 @@ def test_debug_with_overridden_continue():
         def do_continue(self, arg):
             global count_continue
             count_continue += 1
-            print("do_continue_%d" % count_continue)
+            print(f"do_continue_{count_continue}")
             return super().do_continue(arg)
 
         do_c = do_cont = do_continue

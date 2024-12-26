@@ -3041,10 +3041,12 @@ def test_exception_through_generator():
         except AssertionError:
             xpm()
 
+
+    caret_line = "\n.*^^^^^" if sys.version_info >= (3, 12, 1) else ""
     check(fn, f"""
 Traceback (most recent call last):
   File "{RE_THIS_FILE}", line NUM, in fn
-    for _ in gen():
+    for _ in gen():{caret_line}
   File "{RE_THIS_FILE}", line NUM, in gen
     assert False
 AssertionError.*

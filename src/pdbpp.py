@@ -413,7 +413,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
 
             linecache.checkcache = _linecache_checkcache
 
-    def interaction(self, frame, traceback):
+    def interaction(self, frame, tb_or_exception):
         if frame is None:
             # Skip clearing screen if called with no frame (e.g. via pdb.main).
             self._sticky_skip_cls = True
@@ -421,7 +421,12 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
 
         self._in_interaction = True
         try:
-            return self._interaction(frame, traceback)
+            tb = (
+                tb_or_exception.__traceback__
+                if hasattr(tb_or_exception, "__traceback__")
+                else tb_or_exception
+            )
+            return self._interaction(frame, tb)
         finally:
             self._in_interaction = False
 
@@ -2143,7 +2148,13 @@ def post_mortem(t=None, Pdb=Pdb):
 
 
 def pm(Pdb=Pdb):
-    post_mortem(sys.last_traceback, Pdb=Pdb)
+    if sys.version_info >= (3, 12):
+        exc = sys.last_exc if hasattr(sys, "last_exc") else None
+        tb = exc.__traceback__ if exc else None
+    else:
+        tb = sys.last_traceback
+
+    post_mortem(tb, Pdb=Pdb)
 
 
 def cleanup():

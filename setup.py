@@ -1,7 +1,7 @@
 import os.path
-from sysconfig import get_path
 
 from setuptools import setup
+from setuptools.command.build_py import build_py
 
 readme_path = os.path.join(os.path.dirname(__file__), "README.rst")
 changelog_path = os.path.join(os.path.dirname(__file__), "CHANGELOG")
@@ -12,6 +12,22 @@ with open(changelog_path, encoding="utf-8") as fh:
     changelog = fh.read()
 
 long_description = readme + "\n\n" + changelog
+
+
+class build_py_with_pth_file(build_py):
+    """Include the .pth file for this project, in the generated wheel."""
+
+    pth_file = "pdbpp_hijack_pdb.pth"
+
+    def run(self):
+        super().run()
+
+        self.copy_file(
+            self.pth_file,
+            os.path.join(self.build_lib, self.pth_file),
+            preserve_mode=0,
+        )
+
 
 setup(
     name="pdbpp",
@@ -35,11 +51,11 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: POSIX",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Programming Language :: Python",
@@ -47,7 +63,7 @@ setup(
         "Topic :: Software Development :: Debuggers",
     ],
     install_requires=[
-        "fancycompleter @ git+https://github.com/bretello/fancycompleter@0.10.5",  # noqa: E501
+        "fancycompleter @ git+https://github.com/bretello/fancycompleter@0.10.6",  # noqa: E501
         "pygments",
     ],
     extras_require={
@@ -59,10 +75,5 @@ setup(
         ],
     },
     setup_requires=["setuptools_scm"],
-    data_files=[
-        (
-            os.path.relpath(get_path("purelib"), get_path("data")),
-            ["pdbpp_hijack_pdb.pth"],
-        ),
-    ],
+    cmdclass={"build_py": build_py_with_pth_file},
 )

@@ -93,9 +93,11 @@ def rebind_globals(func, newglobals):
             _newfunc(func.func, newglobals), *func.args, **func.keywords
         )
 
-    if sys.version_info >= (3, 11) and func.__name__ in (
-        "_ModuleTarget",
-        "_ScriptTarget",
+    if (
+        sys.version_info >= (3, 11)
+        and func.__name__ in ("_ModuleTarget", "_ScriptTarget")
+        or sys.version_info >= (3, 13)
+        and func.__name__ in ("itertools" "_colorize")
     ):
         return func
 
@@ -2122,6 +2124,8 @@ if hasattr(pdb, "_usage"):
 to_rebind = ["run", "runeval", "runctx", "runcall", "main", "set_trace"]
 if sys.version_info >= (3, 11):
     to_rebind += ["_ModuleTarget", "_ScriptTarget"]
+if sys.version_info >= (3, 13):
+    to_rebind += ["itertools", "_colorize"]
 for name in to_rebind:
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())

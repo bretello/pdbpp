@@ -1,4 +1,5 @@
 import sys
+from textwrap import dedent
 
 import pytest
 
@@ -9,14 +10,21 @@ def test_integration(testdir, readline_param):
     tmpdir = testdir.tmpdir
 
     f = tmpdir.ensure("test_file.py")
-    f.write("print('before'); __import__('pdbpp').set_trace(); print('after')")
+    f.write(
+        dedent("""
+        print('before')
+
+        breakpoint()
+        print('after')
+    """)
+    )
 
     if readline_param != "pyrepl":
         # Create empty pyrepl module to ignore any installed pyrepl.
         mocked_pyrepl = tmpdir.ensure("pyrepl.py")
         mocked_pyrepl.write("")
 
-    child = testdir.spawn(sys.executable + " test_file.py", expect_timeout=1)
+    child = testdir.spawn(f"{sys.executable} test_file.py", expect_timeout=1)
     child.expect_exact("\n(Pdb++) ")
 
     if readline_param != "pyrepl":
@@ -60,10 +68,16 @@ def test_integration(testdir, readline_param):
 
     child.sendline("c")
     rest = child.read()
+
     if readline_param == "pyrepl":
-        assert rest == b"\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>"
+        expected = b"\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>"
     else:
-        assert rest == b"c\r\n"
+        expected = b"c\r\n"
+
+    if sys.version_info >= (3, 13):
+        expected += b"after\r\n"
+
+    assert rest == expected
 
 
 def test_ipython(testdir):

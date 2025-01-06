@@ -1,9 +1,12 @@
 import sys
+from readline import __doc__ as readline_doc
 from textwrap import dedent
 
 import pytest
 
 from .conftest import skip_with_missing_pth_file
+
+HAS_GNU_READLINE = "GNU readline" in readline_doc
 
 
 def test_integration(testdir, readline_param):
@@ -42,7 +45,15 @@ def test_integration(testdir, readline_param):
     if readline_param == "pyrepl":
         child.expect_exact(b"\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
     else:
+        if not HAS_GNU_READLINE:
+            reason = dedent("""
+            When using readline instead of pyrepl, this will fail under libedit.
+            This is the case for uv python builds.
+            See here: https://github.com/astral-sh/python-build-standalone/blob/cda1c64dd1b3b7e457d3cc5efc5ff6bf7229f5a3/docs/quirks.rst#use-of-libedit-on-linux
+            """).strip()
+            pytest.xfail(reason)
         child.expect_exact(b"help")
+
     child.sendline("")
     child.expect_exact("\r\nDocumented commands")
     child.expect_exact(pdbpp_prompt)

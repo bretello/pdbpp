@@ -23,6 +23,8 @@ from pdbpp import DefaultConfig, Pdb, StringIO
 
 from .conftest import skip_with_missing_pth_file
 
+from typing import Optional
+
 # Windows support
 # The basic idea is that paths on Windows are dumb because of backslashes.
 # Typically this would be resolved by using `pathlib`, but we need to maintain
@@ -295,7 +297,25 @@ def trans_trn(string):
     return string.translate(trans_trn_table)
 
 
-def check(func, expected, terminal_size=None):
+def check(
+    func,
+    expected,
+    terminal_size=None,
+    add_313_fix: bool = False,
+    set_trace_args: Optional[str] = None,
+):
+    if set_trace_args and not add_313_fix:
+        raise ValueError("cannot use set_trace_args without add_313_fix")
+    if add_313_fix and sys.version_info >= (3, 13):
+        expected = textwrap.dedent(
+            f"""
+            [NUM] > .*fn()
+            -> set_trace({set_trace_args or ""})
+               5 frames hidden .*
+            # n
+            """.rstrip(),
+        ) + textwrap.dedent(expected)
+
     expected, lines = run_func(func, expected, terminal_size)
     maxlen = max(map(len, expected)) if expected else 0
     all_ok = True

@@ -215,7 +215,16 @@ def runpdb(
 
 
 def is_prompt(line: str) -> bool:
-    prompts = {"# ", "(#) ", "((#)) ", "(((#))) ", "(Pdb) ", "(Pdb++) ", "(com++) "}
+    prompts = {
+        "# ",
+        "(#) ",
+        "((#)) ",
+        "(((#))) ",
+        "(Pdb) ",
+        "(Pdb++) ",
+        "(com++) ",
+        "... ",  # multiline prompt editing in 3.13
+    }
     for prompt in prompts:
         if line.startswith(prompt):
             return len(prompt)
@@ -4632,7 +4641,7 @@ def test_hide_hidden_frames():
         -> g()
            6 frames hidden .*
         # down
-        ... Newest frame
+        \\*\\*\\* Newest frame
         # hf_unhide
         # down
         [NUM] > .*g()
@@ -4642,7 +4651,7 @@ def test_hide_hidden_frames():
         -> g()
         # hf_hide        ### hide the frame again
         # down
-        ... Newest frame
+        \\*\\*\\* Newest frame
         # c
         """
     check(fn, expected)
@@ -5212,12 +5221,20 @@ def test_syntaxerror_in_command():
     def fn():
         set_trace()
 
-    expected = """
+    expected = (
+        """
         --Return--
         [NUM] > .*fn()
         -> set_trace
            5 frames hidden .*
-        # print(
+        # print("""
+        + (
+            """
+        ... ."""  # multi-line prompt, add a random '.' to trigger SyntaxError
+            if sys.version_info >= (3, 13)
+            else ""
+        )
+        + """
         \\*\\*\\* SyntaxError: .*
         # debug print(
         ENTERING RECURSIVE DEBUGGER
@@ -5225,6 +5242,7 @@ def test_syntaxerror_in_command():
         LEAVING RECURSIVE DEBUGGER
         # c
         """
+    )
 
     check(fn, expected, add_313_fix=True)
 

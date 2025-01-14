@@ -56,13 +56,12 @@ jobs:
           path: ${{ github.workspace }}/.nox/tests-${{ matrix.python }}
           key: "nox|${{ matrix.os }}|tests-${{ matrix.python }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('noxfile.py', 'setup.py', 'pyproject.toml') }}"
 
-      - name: Update tools and print info
+      - name: Install tools and print info
         run: |
-          pip install -U pip setuptools virtualenv
-          pip list
-
-      - name: Install nox
-        run: pip install nox==2023.4.22
+          pip install -U pip uv nox
+          pip --version
+          uv --version
+          nox --version
 
       - name: Test
         env:

@@ -46,15 +46,12 @@ jobs:
           path: ${{ github.workspace }}/.nox/lint
           key: "nox-lint|${{ matrix.os }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('noxfile.py', 'setup.py', 'pyproject.toml') }}"
 
-      - name: Update pip/setuptools
+      - name: Install tools
         run: |
-          pip install -U pip setuptools
-
-      - name: Install nox
-        run: pip install nox==2023.4.22
-
-      - name: Version information
-        run: pip list
+          pip install -U pip uv nox
+          pip --version
+          uv --version
+          nox --version
 
       - name: Lint
         run: nox -v -s lint

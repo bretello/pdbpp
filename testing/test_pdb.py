@@ -1452,7 +1452,7 @@ def test_single_question_mark_with_existing_command(monkeypatch):
             >= (
                 3,
                 13,
-            )  # in 3.13, calling a(rgs) with arguments returns an error. See https://github.com/python/cpython/issues/103464  # noqa: E501
+            )  # in 3.13, calling a(rgs) with arguments returns an error. See https://github.com/python/cpython/issues/103464
             else ""
         )
         + """
@@ -2419,7 +2419,7 @@ def test_truncated_source_with_pygments():
             NUM +$
             NUM +->         ^[[38;5;28;01mreturn^[[39;00m a
             # c
-            """)  # noqa: E501,UP032
+            """)  # noqa: UP032
 
     if sys.version_info >= (3, 13):
         expected = (
@@ -2477,7 +2477,7 @@ def test_truncated_source_with_pygments_and_highlight():
         <COLORNUM> +$
         <COLORCURLINE> +->         ^[[38;5;28;01;44mreturn<PYGMENTSRESET> a                                                       ^[[00m
         # c
-        """  # noqa: E501,UP032
+        """,  # noqa: UP032
     )
     if sys.version_info >= (3, 13):
         expected = (
@@ -2811,7 +2811,10 @@ class TestListWithChangedSource:
         monkeypatch.setenv("PDBPP_COLORS", "0")
         monkeypatch.syspath_prepend(tmpdir.strpath)
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(
+        strict=False,
+        reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420",
+    )
     def test_list_with_changed_source(self):
         if "coverage" in sys.modules:
             pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
@@ -2851,7 +2854,10 @@ class TestListWithChangedSource:
     """,
         )
 
-    @pytest.mark.xfail(strict=False, reason="Flaky: fails when called with pytest --cov - see https://github.com/nedbat/coveragepy/issues/1420") # noqa: E501
+    @pytest.mark.xfail(
+        strict=False,
+        reason="Flaky: fails in tox, succeeds when called with pytest - see https://github.com/nedbat/coveragepy/issues/1420",
+    )
     def test_longlist_with_changed_source(self):
         if "coverage" in sys.modules:
             pytest.fail(reason="Fails when called in coverage, see https://github.com/nedbat/coveragepy/issues/1420")
@@ -2902,7 +2908,7 @@ def test_longlist_with_highlight():
         <COLORNUM>             set_trace(Config=ConfigWithHighlight)
         <COLORCURLINE> +->         return a                                                       ^[[00m$
         # c
-        """,  # noqa: E501
+        """,
     )
     if sys.version_info >= (3, 13):
         expected = (
@@ -3298,7 +3304,7 @@ def test_sticky_by_default_with_use_pygments_auto():
             NUM  ->         a ^[[38;5;241m=^[[39m ^[[38;5;241m1^[[39m
             NUM             ^[[38;5;28;01mreturn^[[39;00m a
             # c
-            """,  # noqa: E501
+            """,
         )
     else:
         expected = textwrap.dedent(
@@ -3386,7 +3392,7 @@ def test_sticky_dunder_exception_with_highlight():
         <COLORCURLINE>  ->         raises().*
         <COLORLNUM>InnerTestException: <COLORRESET>
         # c
-    """)  # noqa: E501
+    """)
     if sys.version_info >= (3, 13):
         expected = textwrap.dedent(
             """
@@ -7812,13 +7818,13 @@ def test_keeps_reset_escape_sequence_with_source_highlight():
     def fn():
         set_trace(Config=MyConfig)
 
-        a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"  # noqa: E501
-        b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbX"  # noqa: E501
+        a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX"
+        b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbX"
         return a, b
 
     if int(pygments_major) >= 2 and int(pygments_minor) >= 19:
         highlighted_code = (
-            "^[[38;5;28;01mdef^[[39;00m^[[38;5;250m ^[[39m^[[38;5;21mfn^[[39m():"  # noqa: E501
+            "^[[38;5;28;01mdef^[[39;00m^[[38;5;250m ^[[39m^[[38;5;21mfn^[[39m():"
         )
     else:  # pygments 2.18
         highlighted_code = "^[[38;5;28;01mdef^[[39;00m ^[[38;5;21mfn^[[39m():"
@@ -7844,7 +7850,7 @@ def test_keeps_reset_escape_sequence_with_source_highlight():
         <COLORNUM>             b ^[[38;5;241m=^[[39m ^[[38;5;124m"^[[39m^[[38;5;124mbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb^[[39m^[[38;5;124m<PYGMENTSRESET>
         <COLORNUM>             ^[[38;5;28;01mreturn^[[39;00m a, b
         # c
-        """)  # noqa: E501
+        """)
 
     check(fn, expected)
 

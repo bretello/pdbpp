@@ -20,7 +20,7 @@ select = [
 ignore = ["F401", "E722"]
 
 [tool.ruff.lint.per-file-ignores]
-"testing/**" = ["S", "B011", "B904"]
+"testing/**" = ["S", "B011", "B904", "E501"]
 "src/pdbpp.py" = [
     "B019" # lru cache can lead to memory leaks. TODO: stop silencing the error and fix it
 ]

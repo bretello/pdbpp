@@ -1035,11 +1035,13 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                 self._print_lines_pdbpp(lines, lineno, print_markers=False)
 
     def default(self, line):
-        """Patched version to fix namespace with list comprehensions.
-
-        Fixes https://bugs.python.org/issue21161.
-        """
         self.history.append(line)
+        if sys.version_info >= (3, 12):
+            super().default(line)
+            return
+
+        # fix for https://github.com/python/cpython/issues/65360
+        # https://github.com/python/cpython/pull/111094
         if line[:1] == "!":
             line = line[1:]
         locals_ = self.curframe_locals
@@ -2233,6 +2235,7 @@ def disable():
 
 
 disable.set_trace = lambda frame=None, Pdb=Pdb, **kwargs: None
+
 
 def set_tracex():
     print("PDB!")

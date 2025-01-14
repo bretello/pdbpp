@@ -10,7 +10,7 @@ on:
       - "master"
       - "release-*"
   workflow_dispatch:
-
+  merge_group:
   schedule:
     - cron: "20 4 * * 2" # once a week
 

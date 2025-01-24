@@ -3,12 +3,13 @@ This is an example configuration file for pdb++.
 
 Put it into ~/.pdbrc.py to use it.
 """
-import pdb
+
+import pdbpp
 
 from pygments.styles import get_style_by_name
 
 
-class Config(pdb.DefaultConfig):
+class Config(pdbpp.DefaultConfig):
     # prompt = "(Pdb++) "
     sticky_by_default = True  # shows full code context at every step
 

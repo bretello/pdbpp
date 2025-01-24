@@ -542,7 +542,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         n = len(self._hidden_frames)
         if n and self.config.show_hidden_frames_count:
             print(
-                f"   {n} frame{'s' if n>1 else ''} hidden (try 'help hidden_frames')",
+                f"   {n} frame{'s' if n > 1 else ''} hidden (try 'help hidden_frames')",
                 file=self.stdout,
             )
 
@@ -1558,7 +1558,7 @@ except for when using the function decorator.
             if self.config.show_hidden_frames_count:
                 n = len(self._hidden_frames)
                 if n:
-                    s += f", {n} frame{'s' if n>1 else ''} hidden"
+                    s += f", {n} frame{'s' if n > 1 else ''} hidden"
             top_lines.append(s)
 
             sticky_range = self.sticky_ranges.get(self.curframe, None)
@@ -2143,7 +2143,7 @@ def post_mortem(t=None, Pdb=Pdb):
         t = sys.exc_info()[2]
     if t is None:
         raise ValueError(
-            "A valid traceback must be passed if no " "exception is being handled"
+            "A valid traceback must be passed if no exception is being handled"
         )
 
     p = Pdb()

@@ -4,6 +4,7 @@ This gets inserted to the beginning of sys.path via pdbpp_hijack_pdb.pth.
 
 You can set PDBPP_HIJACK_PDB=0 as an environment variable to skip it.
 """
+
 import os
 import sys
 

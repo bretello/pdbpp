@@ -538,7 +538,7 @@ def test_set_trace_remembers_previous_state():
 
             return f"""
             [NUM] > .*fn()
-            -> set_trace({'cleanup=False' if not cleanup else ''})
+            -> set_trace({"cleanup=False" if not cleanup else ""})
                5 frames hidden .*
             """.strip()
 
@@ -596,7 +596,7 @@ def test_set_trace_remembers_previous_state_via_module():
 
             return f"""
             [NUM] > .*fn()
-            -> set_trace_via_module({'cleanup=False' if not cleanup else ''})
+            -> set_trace_via_module({"cleanup=False" if not cleanup else ""})
                5 frames hidden .*
             """.strip()
 

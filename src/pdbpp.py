@@ -97,7 +97,7 @@ def rebind_globals(func, newglobals):
         sys.version_info >= (3, 11)
         and func.__name__ in ("_ModuleTarget", "_ScriptTarget")
         or sys.version_info >= (3, 13)
-        and func.__name__ in ("itertools" "_colorize")
+        and func.__name__ in ("itertools", "_colorize")
     ):
         return func
 

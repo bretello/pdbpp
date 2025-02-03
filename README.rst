@@ -36,7 +36,7 @@ unexpected behavior, please report it as a bug.
 Installation
 ------------
 
-    $ pip install https://github.com/bretello/pdbpp
+    $ pip install git+https://github.com/bretello/pdbpp
 
 Usage
 -----

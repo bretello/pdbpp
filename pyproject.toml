@@ -24,7 +24,7 @@ ignore = ["F401", "E722"]
 "src/pdbpp.py" = [
     "B019" # lru cache can lead to memory leaks. TODO: stop silencing the error and fix it
 ]
-"src/pdbpp_utils/_version.py" = ["UP"]
+"src/pdbpp_utils/_version.py" = ["ALL"]
 
 [tool.pytest.ini_options]
 addopts = "--cov --cov-branch --no-cov-on-fail -ra --tb short -p pytester"

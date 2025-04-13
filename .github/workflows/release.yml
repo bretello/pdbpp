@@ -18,10 +18,9 @@ jobs:
           python-version: "3.12"
       - name: Install requirements
         run: |
-          pip install nox==2023.4.22
+          pip install twine nox[uv]==2025.2.9
       - name: Build
         run: nox -s build
-      - run: twine check dist/*
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: "__token__"

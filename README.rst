@@ -1,6 +1,23 @@
 pdb++, a drop-in replacement for pdb
 ====================================
 
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+   :target: https://github.com/astral-sh/ruff
+   :alt: Ruff
+
+.. image:: https://github.com/bretello/pdbpp/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/bretello/pdbpp/actions/workflows/ci.yml
+   :alt: Tests
+
+.. image:: https://codecov.io/gh/pdbpp/pdbpp/graph/badge.svg?token=IOKP5121OU
+   :target: https://codecov.io/gh/pdbpp/pdbpp
+   :alt: Codecov
+
+.. image:: https://img.shields.io/pypi/v/pdbpp.svg
+   :target: https://pypi.org/project/pdbpp/
+   :alt: PyPI version
+
+
 What is it?
 -----------
 

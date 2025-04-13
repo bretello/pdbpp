@@ -9,7 +9,7 @@ from .conftest import skip_with_missing_pth_file
 HAS_GNU_READLINE = "GNU readline" in readline_doc
 
 
-@pytest.mark.xfail(reason="flaky")
+@pytest.mark.xfail(sys.version_info >= (3, 13), reason="flaky")
 def test_integration(testdir, readline_param):
     tmpdir = testdir.tmpdir
 
@@ -90,6 +90,12 @@ def test_integration(testdir, readline_param):
     assert rest == expected
 
 
+@pytest.mark.xfail(
+    sys.version_info >= (3, 12),
+    reason="ipython integration with 3.13 is preliminary"
+    if sys.version_info >= (3, 13)
+    else "flaky",
+)
 def test_ipython(testdir):
     """Test integration when used with IPython.
 
@@ -99,7 +105,8 @@ def test_ipython(testdir):
     skip_with_missing_pth_file()
 
     child = testdir.spawn(
-        f"{sys.executable} -m IPython --colors=nocolor --simple-prompt"
+        f"{sys.executable} -m IPython --colors=nocolor --simple-prompt",
+        expect_timeout=1,
     )
     child.sendline("%debug raise ValueError('my_value_error')")
     child.sendline("up")

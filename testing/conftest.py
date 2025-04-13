@@ -84,28 +84,40 @@ def tmpdirhome(tmpdir, monkeypatch):
         yield tmpdir
 
 
-@pytest.fixture(params=("pyrepl", "readline"), scope="session")
+@pytest.fixture(
+    params=(
+        ("pyrepl" if sys.version_info < (3, 13) else "_pyrepl"),
+        "readline",
+    ),
+    scope="session",
+)
 def readline_param(request):
     m = MonkeyPatch()
 
-    if request.param == "pyrepl":
-        old_stdin = sys.stdin
+    if "pyrepl" not in request.param:
+        m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", False)
+        return request.param
 
-        class fake_stdin:
-            """Missing fileno() to skip pyrepl.readline._setup.
+    old_stdin = sys.stdin
 
-            This is required to make tests not hang without capturing (`-s`)."""
+    class fake_stdin:
+        """Missing fileno() to skip pyrepl.readline._setup.
 
-        sys.stdin = fake_stdin()
+        This is required to make tests not hang without capturing (`-s`)."""
+
+    sys.stdin = fake_stdin()
+    if sys.version_info >= (3, 13):
+        import _pyrepl.readline
+
+        sys.stdin = old_stdin
+    else:
         try:
             import pyrepl.readline  # noqa: F401
         except ImportError as exc:
             pytest.skip(reason=f"pyrepl not available: {exc}")
         finally:
             sys.stdin = old_stdin
-        m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", True)
-    else:
-        m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", False)
+    m.setattr("fancycompleter.DefaultConfig.prefer_pyrepl", True)
     return request.param
 
 
@@ -116,6 +128,8 @@ def monkeypatch_readline(monkeypatch, readline_param):
     def inner(line, begidx, endidx):
         if readline_param == "pyrepl":
             readline = "pyrepl.readline"
+        elif readline_param == "_pyrepl":
+            readline = "_pyrepl.readline"
         else:
             assert readline_param == "readline"
             readline = "readline"

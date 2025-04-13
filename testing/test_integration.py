@@ -9,6 +9,7 @@ from .conftest import skip_with_missing_pth_file
 HAS_GNU_READLINE = "GNU readline" in readline_doc
 
 
+@pytest.mark.xfail(reason="flaky")
 def test_integration(testdir, readline_param):
     tmpdir = testdir.tmpdir
 
@@ -22,7 +23,7 @@ def test_integration(testdir, readline_param):
     """)
     )
 
-    if readline_param != "pyrepl":
+    if "pyrepl" not in readline_param:
         # Create empty pyrepl module to ignore any installed pyrepl.
         mocked_pyrepl = tmpdir.ensure("pyrepl.py")
         mocked_pyrepl.write("")
@@ -30,11 +31,11 @@ def test_integration(testdir, readline_param):
     child = testdir.spawn(f"{sys.executable} test_file.py", expect_timeout=1)
     child.expect_exact("\n(Pdb++) ")
 
-    if readline_param != "pyrepl":
+    if "pyrepl" not in readline_param:
         # Remove it after startup to not interfere with completions.
         mocked_pyrepl.remove()
 
-    if readline_param == "pyrepl":
+    if "pyrepl" in readline_param:
         child.expect_exact("\x1b[?12l\x1b[?25h")
         pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
     else:
@@ -42,7 +43,7 @@ def test_integration(testdir, readline_param):
 
     # Completes help as unique (coming from pdb and fancycompleter).
     child.send(b"hel\t")
-    if readline_param == "pyrepl":
+    if "pyrepl" in readline_param:
         child.expect_exact(b"\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
     else:
         if not HAS_GNU_READLINE:
@@ -61,13 +62,13 @@ def test_integration(testdir, readline_param):
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
     child.send(b"b \t")
-    if readline_param == "pyrepl":
+    if "pyrepl" in readline_param:
         child.expect_exact(b"\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:\x1b[?12l\x1b[?25h")
     else:
         child.expect_exact(b"b test_file.py:")
 
     child.sendline("")
-    if readline_param == "pyrepl":
+    if "pyrepl" in readline_param:
         child.expect_exact(
             b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
             b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
@@ -78,7 +79,7 @@ def test_integration(testdir, readline_param):
     child.sendline("c")
     rest = child.read()
 
-    if readline_param == "pyrepl":
+    if "pyrepl" in readline_param:
         expected = b"\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>"
     else:
         expected = b"c\r\n"

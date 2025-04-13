@@ -6023,7 +6023,7 @@ def test_complete_removes_duplicates_with_coloring(
             # Patch readline to return expected results for "help".
             monkeypatch_readline("help", 0, 4)
 
-            if readline_param == "pyrepl":
+            if "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("help") == [
                     "\x1b[000;00m\x1b[00mhelp\x1b[00m",
@@ -6036,7 +6036,7 @@ def test_complete_removes_duplicates_with_coloring(
 
             # Patch readline to return expected results for "p helpvar.".
             monkeypatch_readline("p helpvar.", 2, 10)
-            if readline_param == "pyrepl":
+            if "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 comps = get_completions("helpvar.")
                 assert isinstance(helpvar.denominator, int)
@@ -6057,7 +6057,7 @@ def test_complete_removes_duplicates_with_coloring(
 
             monkeypatch_readline("p obj.foo", 2, 9)
             comps = get_completions("obj.foo")
-            if readline_param == "pyrepl":
+            if "pyrepl" in readline_param:
                 assert comps == [
                     "\x1b[000;00m\x1b[33;01mfoo\x1b[00m",
                     "\x1b[001;00m\x1b[33;01mfoobar\x1b[00m",
@@ -6164,7 +6164,7 @@ def test_complete_uses_attributes_only_from_orig_pdb(
             # Patch readline to return expected results for "p sys.version".
             monkeypatch_readline("p sys.version", 2, 13)
 
-            if readline_param == "pyrepl":
+            if "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("sys.version") == [
                     "\x1b[000;00m\x1b[32;01mversion\x1b[00m",

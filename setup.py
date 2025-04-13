@@ -63,7 +63,7 @@ setup(
         "Topic :: Software Development :: Debuggers",
     ],
     install_requires=[
-        "fancycompleter @ git+https://github.com/bretello/fancycompleter@0.10.6",  # noqa: E501
+        "fancycompleter>=0.11.0",
         "pygments",
     ],
     extras_require={

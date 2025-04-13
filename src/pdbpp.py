@@ -521,7 +521,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         completer = self.fancycompleter
         readline = completer.config.readline
         old_completer = readline.get_completer()
-        if fancycompleter.has_leopard_libedit(completer.config):
+        if fancycompleter.has_libedit(completer.config):
             readline.parse_and_bind("bind ^I rl_complete")
         else:
             readline.parse_and_bind("tab: complete")

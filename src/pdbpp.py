@@ -354,7 +354,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
 
     @property
     def prompt(self):
-        return self._prompt
+        return self._pdbpp_prompt
 
     @prompt.setter
     def prompt(self, value):
@@ -363,7 +363,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             m = re.match(r"^(.*\w)(\s*\W\s*)?$", value)
             if m:
                 value = "{}++{}".format(*m.groups(""))
-        self._prompt = value
+        self._pdbpp_prompt = value
 
     def _setup_streams(self, stdout):
         self.stdout = self.ensure_file_can_write_unicode(stdout)
@@ -1462,7 +1462,7 @@ except for when using the function decorator.
 
         prev_pdb = local.GLOBAL_PDB
         p = PdbppWithConfig(self.completekey, self.stdin, self.stdout)
-        p._prompt = f"({self._prompt.strip()}) "
+        p._pdbpp_prompt = f"({self._pdbpp_prompt.strip()}) "
         self.message("ENTERING RECURSIVE DEBUGGER")
         self._flush_sticky_messages()
         try:

@@ -16,6 +16,7 @@ locations = "src", "testing"
         "3.11",
         "3.12",
         "3.13",
+        "3.14",
         "pypy3.8",
         "pypy3.9",
         "pypy3.10",

@@ -372,6 +372,20 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                 value = "{}++{}".format(*m.groups(""))
         self._pdbpp_prompt = value
 
+    @property
+    def curframe_locals(self):
+        if sys.version_info >= (3, 14):
+            return self.curframe.f_locals
+
+        return super().curframe_locals
+
+    @curframe_locals.setter
+    def curframe_locals(self, value):
+        if sys.version_info >= (3, 14):
+            self.curframe.f_locals = value
+        else:
+            self.curframe_locals = value
+
     def _setup_streams(self, stdout):
         self.stdout = self.ensure_file_can_write_unicode(stdout)
 

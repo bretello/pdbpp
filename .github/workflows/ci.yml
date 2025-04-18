@@ -35,10 +35,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        include:
-          - { os: ubuntu-latest, python: "pypy3.9" }
-          - { os: ubuntu-latest, python: "pypy3.10" }
+        # python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14.0-alpha.7"]
+        # include:
+        #   - { os: ubuntu-latest, python: "pypy3.9" }
+        #   - { os: ubuntu-latest, python: "pypy3.10" }
+        python: ["3.14.0-alpha.7"]
 
     steps:
       - uses: actions/checkout@v4

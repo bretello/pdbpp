@@ -697,9 +697,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             self._completions = []
 
             # Get completions from fancycompleter.
-            mydict = self.curframe.f_globals.copy()
-            mydict.update(self.curframe_locals)
-            completer = Completer(mydict)
+            f_globals = self.curframe.f_globals.copy()
+            f_globals.update(self.curframe_locals)
+            completer = Completer(f_globals)
             completions = self._get_all_completions(completer.complete, text)
 
             if self.fancycompleter.config.use_colors:
@@ -1077,6 +1077,23 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         except:
             exc_info = sys.exc_info()[:2]
             self.error(traceback.format_exception_only(*exc_info)[-1].strip())
+
+    @property
+    def curframe_locals(self):
+        # deprecated in 3.13+
+        # See https://github.com/python/cpython/pull/125951/files
+        if sys.version_info >= (3, 13):
+            return self.curframe.f_locals if self.curframe else {}
+
+        return getattr(self, "_curframe_locals", {})
+
+    @curframe_locals.setter
+    def curframe_locals(self, value):
+        if sys.version_info >= (3, 13):
+            # no need to set this, it was just a cache for self.curframe.f_locals
+            return
+
+        self._curframe_locals = value
 
     def do_help(self, arg):
         try:

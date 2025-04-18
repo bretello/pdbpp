@@ -31,7 +31,8 @@ import fancycompleter
 from fancycompleter import Color, Completer, ConfigurableClass
 
 __author__ = "Antonio Cuni <anto.cuni@gmail.com>"
-__url__ = "http://github.com/antocuni/pdb"
+__maintainer__ = "bretello <bretello@distruzione.org"
+__url__ = "http://github.com/bretello/pdb"
 from pdbpp_utils import __version__
 
 # If it contains only _, digits, letters, [] or dots, it's probably side
@@ -213,7 +214,13 @@ class PdbMeta(type):
         if getattr(local, "_pdbpp_in_init", False):
 
             class OrigPdb(pdb.Pdb):
-                def set_trace(self, frame=None):
+                def set_trace(
+                    self,
+                    frame: types.FrameType | None = None,
+                    commands: list[str] | None = None,
+                ):
+                    if commands and sys.version_info < (3, 14):
+                        raise ValueError("commands is only supported on python >= 3.14")
                     print("pdb++: using pdb.Pdb for recursive set_trace.")
                     if frame is None:
                         frame = sys._getframe().f_back
@@ -2023,11 +2030,18 @@ except for when using the function decorator.
         if Pdb is not None:
             return super().stop_here(frame)
 
-    def set_trace(self, frame=None):
+    def set_trace(
+        self,
+        frame: types.FrameType | None = None,
+        commands: list[str] | None = None,
+    ):
         """Remember starting frame.
 
         This is used with pytest, which does not use pdb.set_trace().
         """
+        if commands and sys.version_info < (3, 14):
+            raise ValueError("commands is only supported on python >= 3.14")
+
         if getattr(local, "_pdbpp_completing", False):
             # Handle set_trace being called during completion, e.g. with
             # fancycompleter's attr_matches.

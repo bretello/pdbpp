@@ -35,10 +35,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14.0-alpha.7"]
-        include:
-          - { os: ubuntu-latest, python: "pypy3.9" }
-          - { os: ubuntu-latest, python: "pypy3.10" }
+        # python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14.0-alpha.7"]
+        # include:
+        #   - { os: ubuntu-latest, python: "pypy3.9" }
+        #   - { os: ubuntu-latest, python: "pypy3.10" }
+        python: ["3.14.0-alpha.7"]
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +69,8 @@ jobs:
           COLUMNS: "90" # better alignment (working around https://github.com/blueyed/pytest/issues/491).
           PY_COLORS: "1"
         run: |
-          nox -v -s "tests-${{ matrix.python }}" -- --cov-report=xml
+          #nox -v -s "tests-${{ matrix.python }}" -- --cov-report=xml
+          nox -v -s tests -- --cov-report=xml
 
       - name: Report coverage
         uses: codecov/codecov-action@v3

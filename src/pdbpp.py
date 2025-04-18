@@ -1710,19 +1710,13 @@ except for when using the function decorator.
             self._sticky_need_cls = True
         self._print_if_sticky()
 
-    def print_stack_trace(self):
-        try:
-            for frame_index, frame_lineno in enumerate(self.stack):
-                self.print_stack_entry(frame_lineno, frame_index=frame_index)
-        except KeyboardInterrupt:
-            pass
-
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
         if self.sticky and sys._getframe(1).f_code.co_name == "bp_commands":
             # Skip display of current frame when sticky mode display it later.
             return
+
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,

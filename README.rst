@@ -47,7 +47,7 @@ of new features to make your debugging experience as nice as possible.
 unexpected behavior, please report it as a bug.
 
 .. _pdb: http://docs.python.org/library/pdb.html
-.. _fancycompleter: http://bitbucket.org/antocuni/fancycompleter
+.. _fancycompleter: https://github.com/bretello/fancycompleter
 .. _Pygments: http://pygments.org/
 
 Installation

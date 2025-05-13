@@ -67,6 +67,8 @@ def import_from_stdlib(name):
         with open(pyfile) as f:
             src = f.read()
         co_module = compile(src, pyfile, "exec", dont_inherit=True)
+    # If you're using the Windows embeddable package, then stdlibdir is not a
+    # directory but a file named python3xx.zip.
     if os.path.isfile(stdlibdir):
         import zipimport
         zi = zipimport.zipimporter(stdlibdir)

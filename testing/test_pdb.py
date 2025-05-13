@@ -5704,7 +5704,15 @@ def test_break_with_inner_set_trace():
         -> Pdb(.*).set_trace(frame)
            5 frames hidden .*
         # n
-        --Return-
+        --Return--"""
+            + (
+                """
+        [NUM] .*inner()
+        """
+                if sys.version_info >= (3, 14)
+                else ""
+            )
+            + """
         [NUM] .*inner()
         """
             if sys.version_info >= (3, 13)

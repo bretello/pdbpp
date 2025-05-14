@@ -63,9 +63,16 @@ def import_from_stdlib(name):
 
     stdlibdir, _ = os.path.split(code.__file__)
     pyfile = os.path.join(stdlibdir, f"{name}.py")
-    with open(pyfile) as f:
-        src = f.read()
-    co_module = compile(src, pyfile, "exec", dont_inherit=True)
+    if os.path.isdir(stdlibdir):
+        with open(pyfile) as f:
+            src = f.read()
+        co_module = compile(src, pyfile, "exec", dont_inherit=True)
+    # If you're using the Windows embeddable package, then stdlibdir is not a
+    # directory but a file named python3xx.zip.
+    if os.path.isfile(stdlibdir):
+        import zipimport
+        zi = zipimport.zipimporter(stdlibdir)
+        co_module = zi.get_code(name)        
     exec(co_module, result.__dict__)
 
     return result

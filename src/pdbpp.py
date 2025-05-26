@@ -700,7 +700,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             mydict = self.curframe.f_globals.copy()
             mydict.update(
                 self.curframe_locals
-                if sys.version_info < (3, 14)
+                if sys.version_info < (3, 13)
                 else self.curframe.f_locals
             )
             completer = Completer(mydict)
@@ -933,7 +933,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                 and arg
                 not in (
                     self.curframe_locals
-                    if sys.version_info < (3, 14)
+                    if sys.version_info < (3, 13)
                     else self.curframe.f_locals
                 )
             ):
@@ -970,7 +970,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                             or cmd
                             in (
                                 self.curframe_locals
-                                if sys.version_info < (3, 14)
+                                if sys.version_info < (3, 13)
                                 else self.curframe.f_locals
                             )
                         )
@@ -1073,7 +1073,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             line = line[1:]
         locals = (
             self.curframe_locals
-            if sys.version_info < (3, 14)
+            if sys.version_info < (3, 13)
             else self.curframe.f_locals
         )
         ns = self.curframe.f_globals.copy()
@@ -1420,7 +1420,7 @@ except for when using the function decorator.
         assert 0 <= number < len(self.stack), (number, len(self.stack))
         self.curindex = number
         self.curframe = self.stack[self.curindex][0]
-        if sys.version_info <= (3, 14):
+        if sys.version_info < (3, 13):
             self.curframe_locals = self.curframe.f_locals
         self.print_current_stack_entry()
         self.lineno = None
@@ -1485,7 +1485,7 @@ except for when using the function decorator.
         globals = self.curframe.f_globals
         locals = (
             self.curframe_locals
-            if sys.version_info < (3, 14)
+            if sys.version_info < (3, 13)
             else self.curframe.f_locals
         )
         Config = self.ConfigFactory
@@ -1532,7 +1532,7 @@ except for when using the function decorator.
         ns = self.curframe.f_globals.copy()
         ns.update(
             self.curframe_locals
-            if sys.version_info < (3, 14)
+            if sys.version_info < (3, 13)
             else self.curframe.f_locals
         )
         code.interact("*interactive*", local=ns)
@@ -1547,7 +1547,7 @@ except for when using the function decorator.
                 self.curframe.f_globals,
                 (
                     self.curframe_locals
-                    if sys.version_info < (3, 14)
+                    if sys.version_info < (3, 13)
                     else self.curframe.f_locals
                 ),
             )
@@ -1782,7 +1782,7 @@ except for when using the function decorator.
                 self.curframe.f_globals,
                 (
                     self.curframe_locals
-                    if sys.version_info < (3, 14)
+                    if sys.version_info < (3, 13)
                     else self.curframe.f_locals
                 ),
             )
@@ -1862,7 +1862,7 @@ except for when using the function decorator.
         else:
             self.curindex = len(self.stack) + arg
         self.curframe = self.stack[self.curindex][0]
-        if sys.version_info <= (3, 14):
+        if sys.version_info < (3, 13):
             self.curframe_locals = self.curframe.f_locals
         self.print_current_stack_entry()
         self.lineno = None
@@ -1881,7 +1881,7 @@ except for when using the function decorator.
         else:
             self.curindex = self.curindex - arg
             self.curframe = self.stack[self.curindex][0]
-            if sys.version_info <= (3, 14):
+            if sys.version_info < (3, 13):
                 self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
@@ -1901,7 +1901,7 @@ except for when using the function decorator.
         else:
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
-            if sys.version_info <= (3, 14):
+            if sys.version_info < (3, 13):
                 self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None

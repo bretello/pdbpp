@@ -43,7 +43,11 @@ def test_integration(pytester, readline_param):
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
     child.send(b"b \t")
-    child.expect(b"b.*test_file.py:")
+    if sys.version_info < (3, 14):
+        child.expect(b"b.*test_file.py:")
+    else:
+        child.expect_exact("\x1b[0mb test_file\x1b[0m.\x1b[0mpy\x1b[0m:")
+
     child.sendline()
     child.sendline("c")
     child.expect("after")

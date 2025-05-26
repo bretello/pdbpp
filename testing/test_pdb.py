@@ -5688,8 +5688,9 @@ def test_break_with_inner_set_trace():
 
     _, lineno = inspect.getsourcelines(fn)
 
-    expected = (
-        f"""
+    if sys.version_info < (3, 14):
+        expected = (
+            f"""
         [NUM] > .*fn()
         -> inner()
            5 frames hidden .*
@@ -5698,37 +5699,50 @@ def test_break_with_inner_set_trace():
         # c
         --Return--
         """.rstrip()
-        + (
-            """
+            + (
+                """
         [NUM] .*set_trace()
         -> Pdb(.*).set_trace(frame)
            5 frames hidden .*
         # n
-        --Return--"""
-            + (
-                """
+        --Return--
         [NUM] .*inner()
         """
-                if sys.version_info >= (3, 14)
-                else ""
-            )
-            + """
-        [NUM] .*inner()
-        """
-            if sys.version_info >= (3, 13)
-            else """
+                if sys.version_info >= (3, 13)
+                else """
         [NUM] > .*inner()->None
         """
-        )
-        + """
+            )
+            + """
         -> set_trace(cleanup=False)
            5 frames hidden .*
         # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
         # c
         1
         """.lstrip()
-    )
-    check(fn, expected, add_313_fix=True)
+        )
+        check(fn, expected, add_313_fix=True)
+    else:
+        expected = f"""
+        [NUM] > .*fn()
+        -> set_trace()
+           5 frames hidden .*
+        # break {lineno + 8}
+        Breakpoint . at .*:{lineno + 8}
+        # c
+        [NUM] .*inner()
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # n
+        --Return--
+        [NUM] .*inner()->None
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+        # c
+        1
+        """
+        check(fn, expected)
 
 
 def test_pdbrc_continue(tmpdirhome):

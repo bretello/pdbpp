@@ -71,8 +71,9 @@ def import_from_stdlib(name):
     # directory but a file named python3xx.zip.
     if os.path.isfile(stdlibdir):
         import zipimport
+
         zi = zipimport.zipimporter(stdlibdir)
-        co_module = zi.get_code(name)        
+        co_module = zi.get_code(name)
     exec(co_module, result.__dict__)
 
     return result

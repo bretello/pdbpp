@@ -1869,17 +1869,17 @@ except for when using the function decorator.
 
     do_f = do_frame
 
-    def do_up(self, arg="1"):
+    def do_up(self, arg: str | int = "1"):
         arg = "1" if arg == "" else arg
         try:
-            arg = int(arg)
+            _arg: int = int(arg)
         except (ValueError, TypeError):
             print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
-        if self.curindex - arg < 0:
+        if self.curindex - _arg < 0:
             print("*** Oldest frame", file=self.stdout)
         else:
-            self.curindex = self.curindex - arg
+            self.curindex = self.curindex - _arg
             self.curframe = self.stack[self.curindex][0]
             if sys.version_info < (3, 13):
                 self.curframe_locals = self.curframe.f_locals

@@ -590,24 +590,20 @@ def test_set_trace_remembers_previous_state_via_module():
         return a
 
     if sys.version_info >= (3, 13):
-
-        def get_trace_lines_str(cleanup=True) -> str:
-            """helper to avoid repeating set_trace() lines"""
-
-            return f"""
+        expected = textwrap.dedent("""
             [NUM] > .*fn()
-            -> set_trace_via_module({"cleanup=False" if not cleanup else ""})
+            -> set_trace_via_module()
                5 frames hidden .*
-            """.strip()
-
-        expected = textwrap.dedent(f"""
-            {get_trace_lines_str()}
             # display a
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace_via_module(cleanup=False)
+               5 frames hidden .*
             a: 1 --> 2
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace_via_module(cleanup=False)
+               5 frames hidden .*
             a: 2 --> 3
             # c
             """)

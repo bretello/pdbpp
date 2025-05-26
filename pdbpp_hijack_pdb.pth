@@ -2,6 +2,8 @@
 # Doc: https://docs.python.org/3/library/site.html
 # Code: https://github.com/blueyed/cpython/blob/1b293b600/Lib/site.py#L148-L187
 #
+# See `setup.py` for a similar setup for editable installs.
+#
 # Add our "_pdbpp_path_hack" to the beginning of `sys.path` if:
 # 1. the environment variable PDBPP_HIJACK_PDB is trueish (as an int), defaults to 1.
 #    i.e. PDBPP_HIJACK_PDB=0 can be used to disable it.

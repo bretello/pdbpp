@@ -928,7 +928,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             if line.endswith("??"):
                 cmd = "inspect_with_source"
             elif arg == "" or (
-                hasattr(self, "do_" + arg)
+                hasattr(self, f"do_{arg}")
                 and arg not in self.curframe.f_globals
                 and arg
                 not in (
@@ -962,7 +962,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                     arg = ArgWithCount(arg, count=int(m.group(1)))
                     cmd = m.group(2)
 
-                if hasattr(self, "do_" + cmd):
+                if hasattr(self, f"do_{cmd}"):
                     if (
                         self.curframe
                         and (
@@ -974,7 +974,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                                 else self.curframe.f_locals
                             )
                         )
-                        and cmd + arg == line  # not for "debug ..." etc
+                        and f"{cmd}{arg}" == line  # not for "debug ..." etc
                     ) or arg.startswith("="):
                         cmd, arg, newline = None, None, line
                     elif arg.startswith("(") and cmd in ("list", "next"):

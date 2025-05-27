@@ -126,10 +126,13 @@ def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
         pdbpp.cleanup()
 
     class PdbForFrame(Pdb):
+        _last_pdb_instance = None
+
         def set_trace(self, _frame, *args, **kwargs):
             super().set_trace(frame, *args, **kwargs)
 
     newglobals = pdbpp.set_trace.__globals__.copy()
+
     newglobals["Pdb"] = PdbForFrame
     new_set_trace = pdbpp.rebind_globals(pdbpp.set_trace, newglobals)
     new_set_trace(**kwds)

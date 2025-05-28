@@ -262,6 +262,9 @@ class PdbMeta(type):
             and sys.version_info >= (3, 14)
             and cls._last_pdb_instance is not None
         ):
+            # Since 3.14, set_trace/breakpoint re-use last used Pdb instance
+            # See gh-121450, https://github.com/python/cpython/pull/121451
+            local._pdbpp_in_init = False
             return cls._last_pdb_instance
 
         if (

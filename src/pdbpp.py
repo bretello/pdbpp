@@ -256,6 +256,14 @@ class PdbMeta(type):
 
         frame = sys._getframe().f_back
         called_for_set_trace = PdbMeta.called_for_set_trace(frame)
+
+        if (
+            called_for_set_trace
+            and sys.version_info >= (3, 14)
+            and cls._last_pdb_instance is not None
+        ):
+            return cls._last_pdb_instance
+
         if (
             use_global_pdb
             and global_pdb

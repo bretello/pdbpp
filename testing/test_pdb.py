@@ -538,7 +538,7 @@ def test_set_trace_remembers_previous_state():
         expected = textwrap.dedent(
             """
             [NUM] > .*fn()
-            -> set_trace(*)
+            -> set_trace(.*)
                5 frames hidden .*
             # display a
             # c

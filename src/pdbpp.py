@@ -2235,8 +2235,11 @@ def pm(Pdb=Pdb):
 
 
 def cleanup():
-    local.GLOBAL_PDB = None
-    local._pdbpp_completing = False
+    if sys.version_info >= (3, 14) and local.GLOBAL_PDB:
+        local.GLOBAL_PDB._last_pdb_instance = None
+    else:
+        local.GLOBAL_PDB = None
+        local._pdbpp_completing = False
 
 
 # pdb++ specific interface

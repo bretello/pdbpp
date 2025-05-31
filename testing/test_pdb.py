@@ -124,6 +124,8 @@ def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
 
     if cleanup:
         pdbpp.cleanup()
+        if sys.version_info >= (3, 14):
+            Pdb._last_pdb_instance = None
 
     class PdbForFrame(Pdb):
         _last_pdb_instance = None
@@ -147,6 +149,8 @@ def set_trace(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
 
     if cleanup:
         pdbpp.cleanup()
+        if sys.version_info >= (3, 14):
+            Pdb._last_pdb_instance = None
 
     Pdb(**kwds).set_trace(frame)
 

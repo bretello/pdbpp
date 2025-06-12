@@ -113,6 +113,14 @@ class PdbTest(pdbpp.Pdb):
         print(f"do_shell_called: '{arg}'")
         return self.default(arg)
 
+    @property
+    def _last_pdb_instance(self):
+        return None
+
+    @_last_pdb_instance.setter
+    def _last_pdb_instance(self, value):
+        raise ValueError("cannot set _last_pdb_instance for PdbTest")
+
 
 def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
     """set_trace helper that goes through pdb.set_trace.

@@ -18,6 +18,8 @@ def hijack_breakpointhook(monkeypatch):
     yield
 
     pdbpp.cleanup()
+    # TODO: fix this so that it doesn't reuse the last pdb instance afterwards, see `set_trace_via_module 3.14 fix`
+    PdbTest._last_pdb_instance = None
 
 
 def test_breakpoint():

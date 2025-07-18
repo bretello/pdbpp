@@ -21,7 +21,7 @@ jobs:
           python-version: "3.13"
       - name: Install requirements
         run: |
-          pip install twine nox[uv]==2025.5.1
+          uv pip install -U twine nox==2025.5.1
       - name: Build
         run: nox -s build
       - name:

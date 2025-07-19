@@ -32,7 +32,7 @@ from fancycompleter import Color, Completer, ConfigurableClass
 
 __author__ = "Antonio Cuni <anto.cuni@gmail.com>"
 __maintainer__ = "bretello <bretello@distruzione.org"
-__url__ = "http://github.com/bretello/pdb"
+__url__ = "http://github.com/bretello/pdbpp"
 from pdbpp_utils import __version__
 
 # If it contains only _, digits, letters, [] or dots, it's probably side

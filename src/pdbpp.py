@@ -2221,8 +2221,7 @@ def disable():
         local.GLOBAL_PDB.disabled = True
 
 
-disable.set_trace = lambda frame=None, Pdb=Pdb: None
-
+disable.set_trace = lambda frame=None, Pdb=Pdb, **kwargs: None
 
 def set_tracex():
     print("PDB!")

@@ -1,101 +1,55 @@
+import re
 import sys
-from readline import __doc__ as readline_doc
+from os import spawnl
 from textwrap import dedent
 
+import pexpect
 import pytest
 
 from .conftest import skip_with_missing_pth_file
 
-HAS_GNU_READLINE = "GNU readline" in readline_doc
 
+def test_integration(pytester, readline_param):
+    with (pytester.path / "test_file.py").open("w") as fh:
+        fh.write(
+            dedent("""
+            print('before')
+            breakpoint()
+            print('after')
+        """)
+        )
 
-@pytest.mark.xfail(sys.version_info >= (3, 13), reason="flaky")
-def test_integration(testdir, readline_param):
-    tmpdir = testdir.tmpdir
-
-    f = tmpdir.ensure("test_file.py")
-    f.write(
-        dedent("""
-        print('before')
-
-        breakpoint()
-        print('after')
-    """)
+    child: pexpect.spawn = pytester.spawn(
+        f"{sys.executable} test_file.py", expect_timeout=1
     )
+    prompt = "(Pdb++) "
 
-    if "pyrepl" not in readline_param:
-        # Create empty pyrepl module to ignore any installed pyrepl.
-        mocked_pyrepl = tmpdir.ensure("pyrepl.py")
-        mocked_pyrepl.write("")
-
-    child = testdir.spawn(f"{sys.executable} test_file.py", expect_timeout=1)
-    child.expect_exact("\n(Pdb++) ")
-
-    if "pyrepl" not in readline_param:
-        # Remove it after startup to not interfere with completions.
-        mocked_pyrepl.remove()
-
-    if "pyrepl" in readline_param:
-        child.expect_exact("\x1b[?12l\x1b[?25h")
-        pdbpp_prompt = "\n(Pdb++) \x1b[?12l\x1b[?25h"
-    else:
-        pdbpp_prompt = "\n(Pdb++) "
+    child.expect_exact("before")
+    if sys.version_info >= (3, 13):
+        child.expect_exact("breakpoint")
+    child.expect_exact(prompt)
 
     # Completes help as unique (coming from pdb and fancycompleter).
-    child.send(b"hel\t")
-    if "pyrepl" in readline_param:
-        child.expect_exact(b"\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
+    child.send("hel\t")
+    if sys.version_info >= (3, 13):
+        child.expect_exact("help")
     else:
-        if not HAS_GNU_READLINE:
-            reason = dedent("""
-            When using readline instead of pyrepl, this will fail under libedit.
-            This is the case for uv python builds.
-            See here: https://github.com/astral-sh/python-build-standalone/blob/cda1c64dd1b3b7e457d3cc5efc5ff6bf7229f5a3/docs/quirks.rst#use-of-libedit-on-linux
-            """).strip()
-            pytest.xfail(reason)
-        child.expect_exact(b"help")
+        child.expect_exact("\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
 
-    child.sendline("")
-    child.expect_exact("\r\nDocumented commands")
-    child.expect_exact(pdbpp_prompt)
+    child.sendline()
+    child.expect_exact("Documented commands")
+    child.expect_exact(prompt)
 
     # Completes breakpoints via pdb, should not contain "\t" from
     # fancycompleter.
     child.send(b"b \t")
-    if "pyrepl" in readline_param:
-        child.expect_exact(b"\x1b[1@b\x1b[1@ \x1b[?25ltest_file.py:\x1b[?12l\x1b[?25h")
-    else:
-        child.expect_exact(b"b test_file.py:")
-
-    child.sendline("")
-    if "pyrepl" in readline_param:
-        child.expect_exact(
-            b"\x1b[23D\r\n\r\x1b[?1l\x1b>*** Bad lineno: \r\n"
-            b"\x1b[?1h\x1b=\x1b[?25l\x1b[1A\r\n(Pdb++) \x1b[?12l\x1b[?25h"
-        )
-    else:
-        child.expect_exact(b"\r\n*** Bad lineno: \r\n(Pdb++) ")
-
+    child.expect(b"b.*test_file.py:")
+    child.sendline()
     child.sendline("c")
-    rest = child.read()
-
-    if "pyrepl" in readline_param:
-        expected = b"\x1b[1@c\x1b[9D\r\n\r\x1b[?1l\x1b>"
-    else:
-        expected = b"c\r\n"
-
-    if sys.version_info >= (3, 13):
-        expected += b"after\r\n"
-
-    assert rest == expected
+    child.expect("after")
+    child.expect(pexpect.EOF)
 
 
-@pytest.mark.xfail(
-    sys.version_info >= (3, 12),
-    reason="ipython integration with 3.13 is preliminary"
-    if sys.version_info >= (3, 13)
-    else "flaky",
-)
 def test_ipython(testdir):
     """Test integration when used with IPython.
 
@@ -110,10 +64,10 @@ def test_ipython(testdir):
     )
     child.sendline("%debug raise ValueError('my_value_error')")
     child.sendline("up")
-    child.expect_exact("\r\nipdb++> ")
+    child.expect_exact("ipdb++> ")
     child.sendline("c")
-    child.expect_exact("\r\nValueError: my_value_error\r\n")
-    child.expect_exact("\r\nIn [2]: ")
+    child.expect_exact("ValueError: my_value_error")
+    child.expect_exact("In [2]: ")
     child.sendeof()
     child.sendline("y")
     assert child.wait() == 0

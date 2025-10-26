@@ -256,6 +256,17 @@ class PdbMeta(type):
 
         frame = sys._getframe().f_back
         called_for_set_trace = PdbMeta.called_for_set_trace(frame)
+
+        if (
+            called_for_set_trace
+            and sys.version_info >= (3, 14)
+            and cls._last_pdb_instance is not None
+        ):
+            # Since 3.14, set_trace/breakpoint re-use last used Pdb instance
+            # See gh-121450, https://github.com/python/cpython/pull/121451
+            local._pdbpp_in_init = False
+            return cls._last_pdb_instance
+
         if (
             use_global_pdb
             and global_pdb
@@ -698,7 +709,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
 
             # Get completions from fancycompleter.
             mydict = self.curframe.f_globals.copy()
-            mydict.update(self.curframe_locals)
+            mydict.update(
+                self.curframe_locals
+                if sys.version_info < (3, 13)
+                else self.curframe.f_locals
+            )
             completer = Completer(mydict)
             completions = self._get_all_completions(completer.complete, text)
 
@@ -924,9 +939,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             if line.endswith("??"):
                 cmd = "inspect_with_source"
             elif arg == "" or (
-                hasattr(self, "do_" + arg)
+                hasattr(self, f"do_{arg}")
                 and arg not in self.curframe.f_globals
-                and arg not in self.curframe_locals
+                and arg
+                not in (
+                    self.curframe_locals
+                    if sys.version_info < (3, 13)
+                    else self.curframe.f_locals
+                )
             ):
                 cmd = "help"
             else:
@@ -953,14 +973,19 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                     arg = ArgWithCount(arg, count=int(m.group(1)))
                     cmd = m.group(2)
 
-                if hasattr(self, "do_" + cmd):
+                if hasattr(self, f"do_{cmd}"):
                     if (
                         self.curframe
                         and (
                             cmd in self.curframe.f_globals
-                            or cmd in self.curframe_locals
+                            or cmd
+                            in (
+                                self.curframe_locals
+                                if sys.version_info < (3, 13)
+                                else self.curframe.f_locals
+                            )
                         )
-                        and cmd + arg == line  # not for "debug ..." etc
+                        and f"{cmd}{arg}" == line  # not for "debug ..." etc
                     ) or arg.startswith("="):
                         cmd, arg, newline = None, None, line
                     elif arg.startswith("(") and cmd in ("list", "next"):
@@ -1057,7 +1082,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         self.history.append(line)
         if line[:1] == "!":
             line = line[1:]
-        locals = self.curframe_locals
+        locals = (
+            self.curframe_locals
+            if sys.version_info < (3, 13)
+            else self.curframe.f_locals
+        )
         ns = self.curframe.f_globals.copy()
         ns.update(locals)
         try:
@@ -1402,7 +1431,8 @@ except for when using the function decorator.
         assert 0 <= number < len(self.stack), (number, len(self.stack))
         self.curindex = number
         self.curframe = self.stack[self.curindex][0]
-        self.curframe_locals = self.curframe.f_locals
+        if sys.version_info < (3, 13):
+            self.curframe_locals = self.curframe.f_locals
         self.print_current_stack_entry()
         self.lineno = None
 
@@ -1464,7 +1494,11 @@ except for when using the function decorator.
         if orig_trace:
             sys.settrace(None)
         globals = self.curframe.f_globals
-        locals = self.curframe_locals
+        locals = (
+            self.curframe_locals
+            if sys.version_info < (3, 13)
+            else self.curframe.f_locals
+        )
         Config = self.ConfigFactory
 
         class PdbppWithConfig(self.__class__):
@@ -1507,7 +1541,11 @@ except for when using the function decorator.
         contains all the names found in the current scope.
         """
         ns = self.curframe.f_globals.copy()
-        ns.update(self.curframe_locals)
+        ns.update(
+            self.curframe_locals
+            if sys.version_info < (3, 13)
+            else self.curframe.f_locals
+        )
         code.interact("*interactive*", local=ns)
 
     def _get_display_list(self):
@@ -1515,7 +1553,15 @@ except for when using the function decorator.
 
     def _getval_or_undefined(self, arg):
         try:
-            return eval(arg, self.curframe.f_globals, self.curframe_locals)
+            return eval(
+                arg,
+                self.curframe.f_globals,
+                (
+                    self.curframe_locals
+                    if sys.version_info < (3, 13)
+                    else self.curframe.f_locals
+                ),
+            )
         except NameError:
             return undefined
 
@@ -1686,19 +1732,13 @@ except for when using the function decorator.
             self._sticky_need_cls = True
         self._print_if_sticky()
 
-    def print_stack_trace(self):
-        try:
-            for frame_index, frame_lineno in enumerate(self.stack):
-                self.print_stack_entry(frame_lineno, frame_index=frame_index)
-        except KeyboardInterrupt:
-            pass
-
     def print_stack_entry(
         self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
     ):
         if self.sticky and sys._getframe(1).f_code.co_name == "bp_commands":
             # Skip display of current frame when sticky mode display it later.
             return
+
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
@@ -1748,7 +1788,15 @@ except for when using the function decorator.
 
     def _get_position_of_arg(self, arg, quiet=False):
         try:
-            obj = eval(arg, self.curframe.f_globals, self.curframe_locals)
+            obj = eval(
+                arg,
+                self.curframe.f_globals,
+                (
+                    self.curframe_locals
+                    if sys.version_info < (3, 13)
+                    else self.curframe.f_locals
+                ),
+            )
         except:
             if not quiet:
                 exc_info = sys.exc_info()[:2]
@@ -1825,25 +1873,27 @@ except for when using the function decorator.
         else:
             self.curindex = len(self.stack) + arg
         self.curframe = self.stack[self.curindex][0]
-        self.curframe_locals = self.curframe.f_locals
+        if sys.version_info < (3, 13):
+            self.curframe_locals = self.curframe.f_locals
         self.print_current_stack_entry()
         self.lineno = None
 
     do_f = do_frame
 
-    def do_up(self, arg="1"):
+    def do_up(self, arg: str | int = "1"):
         arg = "1" if arg == "" else arg
         try:
-            arg = int(arg)
+            _arg: int = int(arg)
         except (ValueError, TypeError):
             print(f'*** Expected a number, got "{arg}"', file=self.stdout)
             return
-        if self.curindex - arg < 0:
+        if self.curindex - _arg < 0:
             print("*** Oldest frame", file=self.stdout)
         else:
-            self.curindex = self.curindex - arg
+            self.curindex = self.curindex - _arg
             self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
+            if sys.version_info < (3, 13):
+                self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
 
@@ -1862,7 +1912,8 @@ except for when using the function decorator.
         else:
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
-            self.curframe_locals = self.curframe.f_locals
+            if sys.version_info < (3, 13):
+                self.curframe_locals = self.curframe.f_locals
             self.print_current_stack_entry()
             self.lineno = None
 
@@ -2187,8 +2238,11 @@ def pm(Pdb=Pdb):
 
 
 def cleanup():
-    local.GLOBAL_PDB = None
-    local._pdbpp_completing = False
+    if sys.version_info >= (3, 14) and local.GLOBAL_PDB:
+        local.GLOBAL_PDB._last_pdb_instance = None
+    else:
+        local.GLOBAL_PDB = None
+        local._pdbpp_completing = False
 
 
 # pdb++ specific interface

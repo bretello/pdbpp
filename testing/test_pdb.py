@@ -113,6 +113,14 @@ class PdbTest(pdbpp.Pdb):
         print(f"do_shell_called: '{arg}'")
         return self.default(arg)
 
+    @property
+    def _last_pdb_instance(self):
+        return None
+
+    @_last_pdb_instance.setter
+    def _last_pdb_instance(self, value):
+        raise ValueError("cannot set _last_pdb_instance for PdbTest")
+
 
 def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
     """set_trace helper that goes through pdb.set_trace.
@@ -124,12 +132,17 @@ def set_trace_via_module(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
 
     if cleanup:
         pdbpp.cleanup()
+        if sys.version_info >= (3, 14):
+            Pdb._last_pdb_instance = None
 
     class PdbForFrame(Pdb):
+        _last_pdb_instance = None
+
         def set_trace(self, _frame, *args, **kwargs):
             super().set_trace(frame, *args, **kwargs)
 
     newglobals = pdbpp.set_trace.__globals__.copy()
+
     newglobals["Pdb"] = PdbForFrame
     new_set_trace = pdbpp.rebind_globals(pdbpp.set_trace, newglobals)
     new_set_trace(**kwds)
@@ -144,6 +157,8 @@ def set_trace(frame=None, cleanup=True, Pdb=PdbTest, **kwds):
 
     if cleanup:
         pdbpp.cleanup()
+        if sys.version_info >= (3, 14):
+            Pdb._last_pdb_instance = None
 
     Pdb(**kwds).set_trace(frame)
 
@@ -532,25 +547,21 @@ def test_set_trace_remembers_previous_state():
         return a
 
     if sys.version_info >= (3, 13):
-
-        def get_trace_lines_str(cleanup=True) -> str:
-            """helper to avoid repeating set_trace() lines"""
-
-            return f"""
-            [NUM] > .*fn()
-            -> set_trace({"cleanup=False" if not cleanup else ""})
-               5 frames hidden .*
-            """.strip()
-
         expected = textwrap.dedent(
-            f"""
-            {get_trace_lines_str()}
+            """
+            [NUM] > .*fn()
+            -> set_trace(.*)
+               5 frames hidden .*
             # display a
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace(cleanup=False)
+               5 frames hidden .*
             a: 1 --> 2
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace(cleanup=False)
+               5 frames hidden .*
             a: 2 --> 3
             # c
             """,
@@ -5688,8 +5699,9 @@ def test_break_with_inner_set_trace():
 
     _, lineno = inspect.getsourcelines(fn)
 
-    expected = (
-        f"""
+    if sys.version_info < (3, 14):
+        expected = (
+            f"""
         [NUM] > .*fn()
         -> inner()
            5 frames hidden .*
@@ -5698,29 +5710,50 @@ def test_break_with_inner_set_trace():
         # c
         --Return--
         """.rstrip()
-        + (
-            """
+            + (
+                """
         [NUM] .*set_trace()
         -> Pdb(.*).set_trace(frame)
            5 frames hidden .*
         # n
-        --Return-
+        --Return--
         [NUM] .*inner()
         """
-            if sys.version_info >= (3, 13)
-            else """
+                if sys.version_info >= (3, 13)
+                else """
         [NUM] > .*inner()->None
         """
-        )
-        + """
+            )
+            + """
         -> set_trace(cleanup=False)
            5 frames hidden .*
         # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
         # c
         1
         """.lstrip()
-    )
-    check(fn, expected, add_313_fix=True)
+        )
+        check(fn, expected, add_313_fix=True)
+    else:
+        expected = f"""
+        [NUM] > .*fn()
+        -> set_trace()
+           5 frames hidden .*
+        # break {lineno + 8}
+        Breakpoint . at .*:{lineno + 8}
+        # c
+        [NUM] .*inner()
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # n
+        --Return--
+        [NUM] .*inner()->None
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+        # c
+        1
+        """
+        check(fn, expected)
 
 
 def test_pdbrc_continue(tmpdirhome):

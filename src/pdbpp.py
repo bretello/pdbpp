@@ -2211,6 +2211,12 @@ def pm(Pdb=Pdb):
 
 
 def cleanup():
+    if (
+        sys.version_info >= (3, 14)
+        and hasattr(local, "GLOBAL_PDB")
+        and local.GLOBAL_PDB
+    ):
+        local.GLOBAL_PDB._last_pdb_instance = None
     local.GLOBAL_PDB = None
     local._pdbpp_completing = False
 

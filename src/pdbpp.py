@@ -649,7 +649,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         else:
             self.curindex = len(self.stack) - 1
             self.curframe = self.stack[-1][0]
-            self.print_current_stack_entry()
+            self.print_stack_entry()
 
     def reset(self):
         """Set values of attributes as ready to start debugging.
@@ -1425,15 +1425,6 @@ except for when using the function decorator.
     do_list.__doc__ = pdb.Pdb.do_list.__doc__
     do_l = do_list
 
-    def _select_frame(self, number):
-        """Same as pdb.Pdb, but uses print_current_stack_entry (for sticky)."""
-        assert 0 <= number < len(self.stack), (number, len(self.stack))
-        self.curindex = number
-        self.curframe = self.stack[self.curindex][0]
-        self.curframe_locals = self.curframe.f_locals
-        self.print_current_stack_entry()
-        self.lineno = None
-
     def do_continue(self, arg):
         if arg != "":
             self._seen_error = False
@@ -1730,11 +1721,21 @@ except for when using the function decorator.
             pass
 
     def print_stack_entry(
-        self, frame_lineno, prompt_prefix=pdb.line_prefix, frame_index=None
+        self,
+        frame_lineno: int | None = None,
+        prompt_prefix=pdb.line_prefix,
+        frame_index=None,
     ):
-        if self.sticky and sys._getframe(1).f_code.co_name == "bp_commands":
-            # Skip display of current frame when sticky mode display it later.
+        if self.sticky:
+            if sys._getframe(1).f_code.co_name == "bp_commands":
+                # Skip display of current frame when sticky mode display it later.
+                return
+            self._print_if_sticky()
             return
+
+        if frame_lineno is None:
+            frame_lineno = self.stack[self.curindex]
+
         print(
             self._get_formatted_stack_entry(frame_lineno, prompt_prefix, frame_index),
             file=self.stdout,
@@ -1762,12 +1763,6 @@ except for when using the function decorator.
         marker_frameno = fmt.format(marker=marker, frame_prefix=frame_prefix)
 
         return marker_frameno + self.format_stack_entry(frame_lineno, lprefix)
-
-    def print_current_stack_entry(self):
-        if self.sticky:
-            self._print_if_sticky()
-        else:
-            self.print_stack_entry(self.stack[self.curindex])
 
     def preloop(self):
         self._print_if_sticky()
@@ -1862,7 +1857,7 @@ except for when using the function decorator.
             self.curindex = len(self.stack) + arg
         self.curframe = self.stack[self.curindex][0]
         self.curframe_locals = self.curframe.f_locals
-        self.print_current_stack_entry()
+        self.print_stack_entry()
         self.lineno = None
 
     do_f = do_frame
@@ -1880,7 +1875,7 @@ except for when using the function decorator.
             self.curindex = self.curindex - _arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
+            self.print_stack_entry()
             self.lineno = None
 
     do_up.__doc__ = pdb.Pdb.do_up.__doc__
@@ -1899,7 +1894,7 @@ except for when using the function decorator.
             self.curindex = self.curindex + arg
             self.curframe = self.stack[self.curindex][0]
             self.curframe_locals = self.curframe.f_locals
-            self.print_current_stack_entry()
+            self.print_stack_entry()
             self.lineno = None
 
     do_down.__doc__ = pdb.Pdb.do_down.__doc__

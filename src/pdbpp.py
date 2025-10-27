@@ -1703,9 +1703,17 @@ except for when using the function decorator.
             self._sticky_need_cls = True
         self._print_if_sticky()
 
-    def print_stack_trace(self):
+    def print_stack_trace(self, count: int | None = None):
+        if count is None:
+            stack = self.stack
+        elif count == 0:
+            stack = [self.stack[self.curindex]]
+        elif count < 0:
+            stack = self.stack[:-count]
+        else:
+            stack = self.stack[-count:]
         try:
-            for frame_index, frame_lineno in enumerate(self.stack):
+            for frame_index, frame_lineno in enumerate(stack):
                 self.print_stack_entry(frame_lineno, frame_index=frame_index)
         except KeyboardInterrupt:
             pass

@@ -600,14 +600,14 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         if frame.f_globals.get("__unittest"):
             return True
 
-        # `f_locals` might be a list (checked via PyMapping_Check).
         try:
             tbh = frame.f_locals["__tracebackhide__"]
-        except (TypeError, KeyError):
+        except KeyError:
             try:
                 tbh = frame.f_globals["__tracebackhide__"]
-            except (TypeError, KeyError):
+            except KeyError:
                 return False
+
         return bool(tbh)
 
     def get_stack(self, f, t):

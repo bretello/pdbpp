@@ -49,13 +49,6 @@ local._pdbpp_completing = False
 local._pdbpp_in_init = False
 
 
-def __getattr__(name):  # FIXME: ???
-    """Backward compatibility (Python 3.7+)"""
-    if name == "GLOBAL_PDB":
-        return local.GLOBAL_PDB
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
-
-
 def import_from_stdlib(name):
     import code  # arbitrary module which stays in the same dir as pdb
 

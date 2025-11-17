@@ -78,4 +78,5 @@ jobs:
           fail_ci_if_error: true
 
       - name: Build package
+        if: ${{ !contains(matrix.python, 'pypy') }}
         run: nox -s build

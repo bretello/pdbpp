@@ -5811,7 +5811,10 @@ def get_completions(text):
     return comps
 
 
-def test_set_trace_in_completion(monkeypatch_readline):
+def test_set_trace_in_completion(readline_param, monkeypatch_readline):
+    if readline_param == "_pyrepl" and "coverage" in sys.modules:
+        pytest.xfail(reason="Fails with _pyrepl on 3.14+ with --cov enabled")
+
     def fn():
         class CompleteMe:
             attr_called = 0
@@ -5835,29 +5838,18 @@ def test_set_trace_in_completion(monkeypatch_readline):
 
         set_trace()
 
-    if sys.version_info < (3, 13):
-        expected = textwrap.dedent("""
-                    --Return--
-                    [NUM] > .*fn()
-                    .*
-                       5 frames hidden .*
-                    # check_completions()
-                    inner_set_trace_was_ignored
-                    True
-                    # c
-                    """)
-    else:
-        expected = textwrap.dedent("""
-                    [NUM] > .*fn()
-                    -> set_trace()
-                       5 frames hidden .*
-                    # check_completions()
-                    inner_set_trace_was_ignored
-                    True
-                    # c
-                    """)
+    expected = textwrap.dedent("""
+            --Return--
+            [NUM] > .*fn()
+            .*
+               5 frames hidden .*
+            # check_completions()
+            inner_set_trace_was_ignored
+            True
+            # c
+            """)
 
-    check(fn, expected)
+    check(fn, expected, add_313_fix=True)
 
 
 def test_completes_from_pdb(monkeypatch_readline):

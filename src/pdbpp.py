@@ -644,14 +644,6 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             self.curframe = self.stack[-1][0]
             self.print_stack_entry()
 
-    def reset(self):
-        """Set values of attributes as ready to start debugging.
-
-        This overrides Bdb.reset to not clear the linecache (bpo-39967)."""
-        self.botframe = None
-        self._set_stopinfo(None, None)
-        self.forget()
-
     def forget(self):
         if not getattr(local, "_pdbpp_completing", False):
             super().forget()

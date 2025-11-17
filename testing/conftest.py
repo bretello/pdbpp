@@ -146,7 +146,10 @@ def monkeypatch_pdb_methods(monkeypatch):
     def mock(method, *args, **kwargs):
         print(f"=== {method}({args}, {kwargs})")
 
-    for mock_method in ("set_trace", "set_continue"):
+    methods_to_mock = ["set_trace", "set_continue"]
+    if sys.version_info >= (3, 14):
+        methods_to_mock.append("_last_pdb_instance")
+    for mock_method in methods_to_mock:
         monkeypatch.setattr(
             f"pdbpp.pdb.Pdb.{mock_method}", functools.partial(mock, mock_method)
         )

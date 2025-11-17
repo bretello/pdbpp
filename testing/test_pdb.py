@@ -87,6 +87,8 @@ class ConfigWithPygmentsAndHighlight(ConfigWithPygments, ConfigWithHighlight):
 
 class PdbTest(pdbpp.Pdb):
     use_rawinput = 1
+    # For the sake of testing, let's never reuse the last pdb instance (3.14+)
+    _last_pdb_instance = None
 
     def __init__(self, *args, **kwds):
         readrc = kwds.pop("readrc", False)
@@ -532,25 +534,21 @@ def test_set_trace_remembers_previous_state():
         return a
 
     if sys.version_info >= (3, 13):
-
-        def get_trace_lines_str(cleanup=True) -> str:
-            """helper to avoid repeating set_trace() lines"""
-
-            return f"""
-            [NUM] > .*fn()
-            -> set_trace({"cleanup=False" if not cleanup else ""})
-               5 frames hidden .*
-            """.strip()
-
         expected = textwrap.dedent(
-            f"""
-            {get_trace_lines_str()}
+            """
+            [NUM] > .*fn()
+            -> set_trace(.*)
+               5 frames hidden .*
             # display a
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace(cleanup=False)
+               5 frames hidden .*
             a: 1 --> 2
             # c
-            {get_trace_lines_str(cleanup=False)}
+            [NUM] > .*fn()
+            -> set_trace(cleanup=False)
+               5 frames hidden .*
             a: 2 --> 3
             # c
             """,
@@ -4819,61 +4817,6 @@ def test_hidden_pytest_frames():
     check(fn, expected)
 
 
-def test_hidden_pytest_frames_f_local_nondict():
-    class M:
-        values = []
-
-        def __getitem__(self, name):
-            if name == 0:
-                # Handle 'if "__tracebackhide__" in frame.f_locals'.
-                raise IndexError()
-            return globals()[name]
-
-        def __setitem__(self, name, value):
-            # pdb assigns to f_locals itself.
-            self.values.append((name, value))
-
-    def fn():
-        m = M()
-        set_trace()
-        exec("print(1)", {}, m)
-        assert m.values == [("__return__", None)]
-
-    # 3.11 shows the exec frame as <string>(0), while 3.8 shows <string>(1)
-    # See https://docs.python.org/3/whatsnew/3.11.html#inspect
-    line_no = 0 if sys.version_info >= (3, 11) else 1
-
-    expected = rf"""
-        [NUM] > .*fn()
-        -> exec("print(1)", {{}}, m)
-           5 frames hidden (try 'help hidden_frames')
-        # s
-        --Call--
-        [NUM] > <string>({line_no})<module>()
-           5 frames hidden (try 'help hidden_frames')
-        # n
-        [NUM] > <string>(1)<module>()
-           5 frames hidden (try 'help hidden_frames')
-        # n
-        1
-        --Return--
-        [NUM] > <string>(1)<module>()
-           5 frames hidden (try 'help hidden_frames')
-        # c
-        """
-    if sys.version_info >= (3, 13):
-        expected = textwrap.dedent(
-            r"""
-            [NUM] > .*fn()
-            -> set_trace()
-               5 frames hidden .*
-            # n
-            """.rstrip()
-        ) + textwrap.dedent(expected)
-
-    check(fn, expected)
-
-
 def test_hidden_unittest_frames():
     def s(set_trace=set_trace):
         set_trace()
@@ -5688,8 +5631,9 @@ def test_break_with_inner_set_trace():
 
     _, lineno = inspect.getsourcelines(fn)
 
-    expected = (
-        f"""
+    if sys.version_info < (3, 14):
+        expected = (
+            f"""
         [NUM] > .*fn()
         -> inner()
            5 frames hidden .*
@@ -5698,29 +5642,50 @@ def test_break_with_inner_set_trace():
         # c
         --Return--
         """.rstrip()
-        + (
-            """
+            + (
+                """
         [NUM] .*set_trace()
         -> Pdb(.*).set_trace(frame)
            5 frames hidden .*
         # n
-        --Return-
+        --Return--
         [NUM] .*inner()
         """
-            if sys.version_info >= (3, 13)
-            else """
+                if sys.version_info >= (3, 13)
+                else """
         [NUM] > .*inner()->None
         """
-        )
-        + """
+            )
+            + """
         -> set_trace(cleanup=False)
            5 frames hidden .*
         # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
         # c
         1
         """.lstrip()
-    )
-    check(fn, expected, add_313_fix=True)
+        )
+        check(fn, expected, add_313_fix=True)
+    else:
+        expected = f"""
+        [NUM] > .*fn()
+        -> set_trace()
+           5 frames hidden .*
+        # break {lineno + 8}
+        Breakpoint . at .*:{lineno + 8}
+        # c
+        [NUM] .*inner()
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # n
+        --Return--
+        [NUM] .*inner()->None
+        -> set_trace(cleanup=False)
+           5 frames hidden .*
+        # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
+        # c
+        1
+        """
+        check(fn, expected)
 
 
 def test_pdbrc_continue(tmpdirhome):
@@ -5846,7 +5811,10 @@ def get_completions(text):
     return comps
 
 
-def test_set_trace_in_completion(monkeypatch_readline):
+def test_set_trace_in_completion(readline_param, monkeypatch_readline):
+    if readline_param == "_pyrepl" and "coverage" in sys.modules:
+        pytest.xfail(reason="Fails with _pyrepl on 3.14+ with --cov enabled")
+
     def fn():
         class CompleteMe:
             attr_called = 0
@@ -5870,29 +5838,18 @@ def test_set_trace_in_completion(monkeypatch_readline):
 
         set_trace()
 
-    if sys.version_info < (3, 13):
-        expected = textwrap.dedent("""
-                    --Return--
-                    [NUM] > .*fn()
-                    .*
-                       5 frames hidden .*
-                    # check_completions()
-                    inner_set_trace_was_ignored
-                    True
-                    # c
-                    """)
-    else:
-        expected = textwrap.dedent("""
-                    [NUM] > .*fn()
-                    -> set_trace()
-                       5 frames hidden .*
-                    # check_completions()
-                    inner_set_trace_was_ignored
-                    True
-                    # c
-                    """)
+    expected = textwrap.dedent("""
+            --Return--
+            [NUM] > .*fn()
+            .*
+               5 frames hidden .*
+            # check_completions()
+            inner_set_trace_was_ignored
+            True
+            # c
+            """)
 
-    check(fn, expected)
+    check(fn, expected, add_313_fix=True)
 
 
 def test_completes_from_pdb(monkeypatch_readline):
@@ -6382,17 +6339,26 @@ def test_nested_completer(testdir):
             """)
         )
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
-    child = testdir.spawn(f"{quote(sys.executable)} {str(p1)}")
+    child = testdir.spawn(f"{quote(sys.executable)} {str(p1)}", expect_timeout=1)
     child.send("completeme\t")
-    child.expect_exact("\r\n(Pdb++) completeme_outer")
+    if sys.version_info < (3, 14):
+        child.expect_exact("\r\n(Pdb++) completeme_outer")
+    else:
+        child.expect_exact("\r\n(Pdb++) completeme\x07\r\x1b[19G_outer")
     child.send("\nimport pdbpp; _p = pdbpp.Pdb(); _p.reset()")
     child.send("\n_p.interaction(frames[0], None)\n")
     child.expect_exact("\r\n-> frames.append(sys._getframe())\r\n(Pdb++) ")
     child.send("completeme\t")
-    child.expect_exact("completeme_inner")
+    if sys.version_info < (3, 14):
+        child.expect_exact("completeme_inner")
+    else:
+        child.expect_exact("completeme\x07\r\x1b[19G_inner")
     child.send("\nq\n")
     child.send("completeme\t")
-    child.expect_exact("completeme_outer")
+    if sys.version_info < (3, 14):
+        child.expect_exact("completeme_outer")
+    else:
+        child.expect_exact("completeme\x07\r\x1b[19G_outer")
     child.send("\n")
     child.sendeof()
 
@@ -8104,7 +8070,8 @@ class TestCommands:
             f()
 
     def test_commands_with_sticky(self):
-        expected = r"""
+        expected = (
+            r"""
             [NUM] > .*fn()
             -> for i in range(5):
                5 frames hidden .*
@@ -8132,21 +8099,38 @@ class TestCommands:
             0
             1
             3
+            """.rstrip()
+            + (
+                """
             stop 6
             [NUM] > .*f(), 5 frames hidden
 
             NUM             def f():
             NUM  ->             print(a)
+            """
+                if (sys.version_info < (3, 14))
+                # before 3.14 location information is printed after calling f(), in 3.14 it's called after
+                else """
+            [NUM] > .*f(), 5 frames hidden
+
+            NUM             def f():
+            NUM  ->             print(a)
+            stop 6
+            """
+            ).rstrip()
+            + """
             # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
             # c
             6
             10
             """
+        )
 
         check(self.fn, expected, add_313_fix=True)
 
     def test_commands_without_sticky(self):
-        expected = r"""
+        expected = (
+            r"""
             [NUM] > .*fn()
             -> for i in range(5):
                5 frames hidden .*
@@ -8159,13 +8143,28 @@ class TestCommands:
             0
             1
             3
+            """.rstrip()
+            + (
+                """
             stop 6
             [NUM] > .*f()$
             -> print(a)
+            """
+                if sys.version_info < (3, 14)
+                # before 3.14 location information is printed after calling f(), in 3.14 it's called after
+                else """
+            [NUM] > .*f()
+            -> print(a)
+               5 frames hidden
+            stop 6
+            """
+            ).rstrip()
+            + """
             # import pdb; pdbpp.local.GLOBAL_PDB.clear_all_breaks()
             # c
             6
             10
             """
+        )
 
         check(self.fn, expected, add_313_fix=True)

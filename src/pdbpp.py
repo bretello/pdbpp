@@ -1053,9 +1053,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         self.history.append(line)
         if line[:1] == "!":
             line = line[1:]
-        locals = self.curframe_locals
-        ns = self.curframe.f_globals.copy()
-        ns.update(locals)
+        locals_ = self.curframe_locals
+        globals_ = self.curframe.f_globals.copy()
+        globals_.update(locals_)
         try:
             code = compile(line + "\n", "<stdin>", "single")
             save_stdout = sys.stdout
@@ -1065,7 +1065,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
                 sys.stdin = self.stdin
                 sys.stdout = self.stdout
                 sys.displayhook = self.displayhook
-                exec(code, ns, locals)
+                exec(code, globals_, locals_)
             finally:
                 sys.stdout = save_stdout
                 sys.stdin = save_stdin

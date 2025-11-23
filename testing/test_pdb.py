@@ -6782,8 +6782,20 @@ def test_locals():
 
         f()
 
-    expected = """
+    expected = (
+        (
+            """
         [NUM] > .*f()
+        -> set_trace()
+           5 frames hidden .*
+        # n
+        """
+            if sys.version_info >= (3, 13)
+            else """
+        """
+        ).rstrip()
+        + """
+        [NUM] > .*f().*
         -> print(f"{foo=}")
            5 frames hidden .*
         # foo=42
@@ -6796,7 +6808,8 @@ def test_locals():
         # c
         foo=42
         """
-    check(fn, expected, add_313_fix=True)
+    )
+    check(fn, expected)
 
 
 def test_locals_with_list_comprehension():

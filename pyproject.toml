@@ -106,6 +106,7 @@ module = [
 ]
 
 [tool.coverage.run]
+core = "ctrace"
 branch = true
 source = ["pdbpp", "testing"]
 

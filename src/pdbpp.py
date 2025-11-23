@@ -303,7 +303,7 @@ class PdbMeta(type):
         return C.__qualname__ == obj.__class__.__qualname__
 
     @staticmethod
-    def called_for_set_trace(frame):
+    def called_for_set_trace(frame) -> bool | types.FrameType:
         called_for_set_trace = False
         while frame:
             if (

@@ -172,17 +172,6 @@ def set_color(line: str, color: str | int):
 CLEARSCREEN = "\033[2J\033[1;1H"
 
 
-def lasti2lineno(code, lasti):
-    import dis
-
-    linestarts = list(dis.findlinestarts(code))
-    linestarts.reverse()
-    for i, lineno in linestarts:
-        if lasti >= i:
-            return lineno
-    return 0
-
-
 class Undefined:
     def __repr__(self):
         return "<undefined>"
@@ -572,7 +561,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         ret = super().setup(frame, tb)
         if not ret:
             while tb:
-                lineno = lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
+                lineno = pdb.lasti2lineno(tb.tb_frame.f_code, tb.tb_lasti)
                 self.tb_lineno[tb.tb_frame] = lineno
                 tb = tb.tb_next
         return ret

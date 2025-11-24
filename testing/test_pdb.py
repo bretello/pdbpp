@@ -7,6 +7,7 @@ import io
 import os
 import os.path
 import re
+import readline
 import subprocess
 import sys
 import textwrap
@@ -6243,10 +6244,11 @@ ok_end
 
 
 @pytest.mark.xfail(
-    (3, 11) < sys.version_info < (3, 12, 12),
-    reason="Broken on 3.12 before 3.12.12",
+    (((3, 9) < sys.version_info < (3, 11)) and "libedit" in readline.__doc__),
+    reason="Flaky, depending on the readline implementation (GNU readline vs libedit) ",
 )
 def test_nested_completer(testdir):
+    has_libedit = "libedit" in readline.__doc__
     p1 = testdir.makepyfile(
         """
         import sys
@@ -6279,24 +6281,24 @@ def test_nested_completer(testdir):
     testdir.monkeypatch.setenv("PDBPP_COLORS", "0")
     child = testdir.spawn(f"{quote(sys.executable)} {str(p1)}", expect_timeout=1)
     child.send("completeme\t")
-    if sys.version_info < (3, 14):
-        child.expect_exact("\r\n(Pdb++) completeme_outer")
-    else:
+    if has_libedit:
         child.expect_exact("\r\n(Pdb++) completeme\x07\r\x1b[19G_outer")
+    else:
+        child.expect_exact("\r\n(Pdb++) completeme_outer")
     child.send("\nimport pdbpp; _p = pdbpp.Pdb(); _p.reset()")
     child.send("\n_p.interaction(frames[0], None)\n")
     child.expect_exact("\r\n-> frames.append(sys._getframe())\r\n(Pdb++) ")
     child.send("completeme\t")
-    if sys.version_info < (3, 14):
-        child.expect_exact("completeme_inner")
-    else:
+    if has_libedit:
         child.expect_exact("completeme\x07\r\x1b[19G_inner")
+    else:
+        child.expect_exact("completeme_inner")
     child.send("\nq\n")
     child.send("completeme\t")
-    if sys.version_info < (3, 14):
-        child.expect_exact("completeme_outer")
-    else:
+    if has_libedit:
         child.expect_exact("completeme\x07\r\x1b[19G_outer")
+    else:
+        child.expect_exact("completeme_outer")
     child.send("\n")
     child.sendeof()
 

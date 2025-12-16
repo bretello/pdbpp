@@ -2154,6 +2154,8 @@ if sys.version_info >= (3, 11):
     to_rebind += ["_ModuleTarget", "_ScriptTarget"]
 if sys.version_info >= (3, 13):
     to_rebind += ["itertools", "_colorize"]
+if sys.version_info >= (3, 14, 2):
+    to_rebind += ["parse_args"]
 for name in to_rebind:
     func = getattr(pdb, name)
     globals()[name] = rebind_globals(func, globals())

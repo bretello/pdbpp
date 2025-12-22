@@ -42,10 +42,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v5
+      - name: Set up uv (python ${{matrix.python}})
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python }}
+          activate-environment: true
 
       - name: set PY_CACHE_KEY
         run: echo "PY_CACHE_KEY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
@@ -56,11 +57,9 @@ jobs:
           path: ${{ github.workspace }}/.nox/tests-${{ matrix.python }}
           key: "nox|${{ matrix.os }}|tests-${{ matrix.python }}|${{ env.PY_CACHE_KEY }}|${{ hashFiles('noxfile.py', 'setup.py', 'pyproject.toml') }}"
 
-      - name: Install tools and print info
+      - name: Install nox
         run: |
-          pip install -U pip uv nox
-          pip --version
-          uv --version
+          pip install -U nox
           nox --version
 
       - name: Test

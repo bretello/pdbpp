@@ -20,6 +20,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
+          activate-environment: "true"
       - name: check if release
         id: is-release
         run: |

@@ -46,14 +46,14 @@ jobs:
         run: |
           twine upload dist/*
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{steps.is-release.outputs.value == 'true' }}
         with:
           name: "wheel"
           path: dist/*whl
 
       - name: Upload sdist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{steps.is-release.outputs.value == 'true' }}
         with:
           name: "sdist"

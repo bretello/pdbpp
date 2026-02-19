@@ -1698,10 +1698,18 @@ except for when using the function decorator.
         prompt_prefix=pdb.line_prefix,
         frame_index=None,
     ):
-        if self.sticky:
-            if sys._getframe(1).f_code.co_name == "bp_commands":
-                # Skip display of current frame when sticky mode display it later.
-                return
+        co_name = sys._getframe(1).f_code.co_name
+        if self.sticky and co_name == "bp_commands":
+            # Skip display of current frame when sticky mode display it later.
+            return
+
+        if self.sticky and (
+            (co_name in ("do_up", "do_down"))
+            or (
+                (co_name == "_select_frame")
+                and sys._getframe(2).f_code.co_name in ("do_top", "do_bottom")
+            )
+        ):
             self._print_if_sticky()
             return
 
@@ -1829,7 +1837,10 @@ except for when using the function decorator.
             self.curindex = len(self.stack) + arg
         self.curframe = self.stack[self.curindex][0]
         self.curframe_locals = self.curframe.f_locals
-        self.print_stack_entry()
+        if self.sticky:
+            self._print_if_sticky()
+        else:
+            self.print_stack_entry()
         self.lineno = None
 
     do_f = do_frame

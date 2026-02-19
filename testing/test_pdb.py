@@ -1742,6 +1742,45 @@ def test_top_bottom():
     check(a, expected)
 
 
+def test_frame_change_sticky():
+    """Calling up/down/top/bottom/frame with sticky should show source code"""
+
+    class MockPdb(PdbTest):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.times_print_sticky_called = 0
+
+        def _print_if_sticky(self):
+            if self.sticky:
+                self.times_print_sticky_called += 1
+                print(f"print sticky called {self.times_print_sticky_called}")
+
+    pdb = MockPdb()
+
+    def a():
+        b()
+
+    def b():
+        pdb.set_trace()
+        return
+
+    expected = """
+        # sticky
+        print sticky called 1
+        # top
+        print sticky called 2
+        # bottom
+        print sticky called 3
+        # frame 1
+        print sticky called 4
+        # frame # frame with no args should not show code
+        # c
+    """
+
+    check(a, expected)
+    assert pdb.times_print_sticky_called == 4
+
+
 def test_top_bottom_frame_post_mortem():
     def fn():
         def throws():
@@ -7332,6 +7371,43 @@ def test_do_bt_pygments():
         )
 
     check(fn, expected)
+
+
+def test_do_bt_sticky():
+    """Make sure that bt is shown with sticky enabled"""
+
+    def fn():
+        set_trace()
+
+    expected_bt = []
+    _entry: traceback.FrameSummary
+    for i, _entry in enumerate(traceback.extract_stack()[:-3]):
+        expected_bt.append(f"  [{i:2d}] .*")
+        expected_bt.append("  .*")
+    # breakpoint()
+
+    expected = textwrap.dedent("""
+        --Return--
+        [NUM] > .*fn().*
+        -> set_trace()
+           5 frames hidden .*
+        # sticky
+        <CLEARSCREEN>
+        [NUM] > .*fn().*
+
+        NUM .* def fn():
+        NUM  ->.*  set_trace()
+         return None
+        # bt
+        {expected}
+          [NUM] .*(NUM)runpdb()
+               func()
+        > [NUM] .*(NUM)fn()->None
+               set_trace()
+        # c
+        """).format(expected="\n".join(expected_bt))
+
+    check(fn, expected, add_313_fix=True)
 
 
 def test_debug_with_pygments():

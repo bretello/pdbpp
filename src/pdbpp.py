@@ -1606,7 +1606,6 @@ except for when using the function decorator.
             print(line, file=self.stdout)
             len_visible = len(RE_COLOR_ESCAPES.sub("", line))
             top_extra_lines += (len_visible - 1) // width + 2
-        print(file=self.stdout)
 
         # Arrange for prompt and extra lines on top (location + newline
         # typically), and keep an empty line at the end (after prompt), so

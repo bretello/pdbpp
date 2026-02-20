@@ -291,13 +291,7 @@ def run_func(func, expected, terminal_size=None) -> tuple[list[str], list[str]]:
 
 
 def count_frames():
-    # FIXME: isn't there a better way to do this?
-    f = sys._getframe()
-    i = 0
-    while f is not None:
-        i += 1
-        f = f.f_back
-    return i
+    return len(traceback.extract_stack())
 
 
 class InnerTestException(Exception):

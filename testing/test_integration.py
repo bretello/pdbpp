@@ -6,8 +6,6 @@ from textwrap import dedent
 import pexpect
 import pytest
 
-from .conftest import skip_with_missing_pth_file
-
 
 def test_integration(pytester, readline_param):
     with (pytester.path / "test_file.py").open("w") as fh:
@@ -60,7 +58,6 @@ def test_ipython(testdir):
     - `up` used to crash due to conflicting `hidden_frames` attribute/method.
     """
     pytest.importorskip("IPython")
-    skip_with_missing_pth_file()
 
     child = testdir.spawn(
         f"{sys.executable} -m IPython --colors=nocolor --simple-prompt",

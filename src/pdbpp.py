@@ -274,7 +274,7 @@ class PdbMeta(type):
             return global_pdb
 
         obj = cls.__new__(cls)
-        if called_for_set_trace:
+        if cls is Pdb and called_for_set_trace:
             kwargs.setdefault("start_filename", called_for_set_trace.f_code.co_filename)
             kwargs.setdefault("start_lineno", called_for_set_trace.f_lineno)
 

@@ -40,21 +40,28 @@ class CustomEditablePth(_StaticPth):
             "module path does not exist"
         )
 
-        path_hack = f"import sys; sys.path.insert(0, \"{self.path_hack.resolve()}\") if int(os.environ.get('PDBPP_HIJACK_PDB', 1)) else None"
+        path_hack = Path(__file__).with_name("pdbpp.pth").read_text()
         contents = _encode_pth(
             "\n".join(
                 [
-                    path_hack,
                     self.path_entries[0].resolve().as_posix(),
+                    path_hack,
                 ]
             ),
         )
 
+        # include both .pth & .start
         wheel.writestr(f"__editable__.{self.name}.pth", contents)
+        wheel.writestr(
+            f"__editable__.{self.name}.start",
+            Path(__file__).with_name("pdbpp.start").read_bytes(),
+        )
 
 
-class editable_install_with_pth_file(editable_wheel):
-    """custom editable_wheel install so that `pip install -e .` also hijacks pdb with pdbpp"""
+class editable_install_with_startup_files(editable_wheel):
+    """
+    custom editable_wheel install so that `pip install -e .` also hijacks pdb with pdbpp
+    """
 
     _path_hack_name: str = "_pdbpp_path_hack"  # must match name of module in `./src/`
 
@@ -76,26 +83,27 @@ class editable_install_with_pth_file(editable_wheel):
         )
 
 
-class build_py_with_pth_file(build_py):
-    """Include the .pth file for this project, in the generated wheel."""
+class build_py_with_startup_files(build_py):
+    """Include the .pth & .start files for this project, in the generated wheel."""
 
-    pth_file = "pdbpp_hijack_pdb.pth"
+    includes_ = {"pdbpp.pth", "pdbpp.start"}
 
     def run(self):
         super().run()
 
-        self.copy_file(
-            self.pth_file,
-            Path(self.build_lib, self.pth_file),
-            preserve_mode=0,
-        )
-        print(f"build_py_with_pth_file: include {self.pth_file} in wheel")
+        for include in self.includes_:
+            self.copy_file(
+                include,
+                Path(self.build_lib, include),
+                preserve_mode=0,
+            )
+            print(f"build_py_with_pth_file: include {include} in wheel")
 
 
 setup(
     cmdclass={
-        "editable_wheel": editable_install_with_pth_file,
-        "build_py": build_py_with_pth_file,
+        "editable_wheel": editable_install_with_startup_files,
+        "build_py": build_py_with_startup_files,
     },
     platforms=[
         "unix",

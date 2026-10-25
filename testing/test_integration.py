@@ -145,7 +145,7 @@ def test_hijacking():
 
 
 def test_editable_install_pth(tmp_path):
-    """Make sure that running `pip install -e .` installs the .pth file for pdb hijacking"""
+    """Make sure that running `pip install -e .` installs the .pth and .start files for pdb hijacking"""
 
     has_uv = which("uv")
     if has_uv:  # uv is faster in creating venvs
@@ -176,6 +176,12 @@ def test_editable_install_pth(tmp_path):
     editable_pth = Path(pths[0])
     pth_contents = editable_pth.read_text()
 
-    pattern = r"sys.path.insert\(0, \".*_pdbpp_path_hack\"\)"
-    result = re.search(pattern, pth_contents)
-    assert result is not None
+    assert pth_contents.splitlines()[0] == (pdbpp_root / "src").resolve().as_posix()
+    assert (
+        "import pdbpp_utils.__hacks__; pdbpp_utils.__hacks__.hijack_pdb()"
+        in pth_contents
+    )
+    assert (
+        editable_pth.with_suffix(".start").read_text()
+        == (pdbpp_root / "pdbpp.start").read_text()
+    )

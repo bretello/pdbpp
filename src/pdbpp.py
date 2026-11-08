@@ -1068,7 +1068,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         if sys.version_info >= (3, 13):
             return self.curframe.f_locals if self.curframe else {}
 
-        return getattr(self, "_curframe_locals", {})
+        # IPython >= 9.17 defines "_curframe_locals" as a read-only property,
+        # which takes precedence over an instance attribute of the same name.
+        # Use the instance __dict__ to avoid errors due to conflicting
+        # attribute/property names when using pdbpp
+        return self.__dict__.get("_curframe_locals", {})
 
     @curframe_locals.setter
     def curframe_locals(self, value):
@@ -1076,7 +1080,8 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             # no need to set this, it was just a cache for self.curframe.f_locals
             return
 
-        self._curframe_locals = value
+        # self._curframe_locals = value # clashes with ipython>=9.17 curframe_locals
+        self.__dict__["_curframe_locals"] = value
 
     def do_help(self, arg):
         try:

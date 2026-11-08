@@ -1,5 +1,6 @@
 import glob
 import importlib
+import logging
 import re
 import subprocess
 import sys
@@ -11,6 +12,33 @@ from textwrap import dedent
 
 import pexpect
 import pytest
+
+log = logging.getLogger(__name__)
+
+
+class PexpectLog:
+    """Capture full pexpect child output and print it on failure.
+
+    pexpect's default error output only shows the last 100 chars of
+    ``before``/``buffer``, making debugging difficult. This wraps the child
+    to collect everything and dump it when a TIMEOUT/EOF is raised.
+    """
+
+    def __init__(self, child, name="child"):
+        self.child = child
+        self.name = name
+        self.logfile = child.logfile
+
+    def __enter__(self):
+        return self.child
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None and issubclass(exc_type, (pexpect.TIMEOUT, pexpect.EOF)):
+            output = self.child.before or ""
+            if isinstance(output, bytes):
+                output = output.decode("utf-8", errors="replace")
+            print(f"\n--- {self.name} full output before failure ---\n{output}\n--- end ---")
+        return False
 
 
 def test_integration(pytester, readline_param):
@@ -28,34 +56,35 @@ def test_integration(pytester, readline_param):
     )
     prompt = "(Pdb++) "
 
-    child.expect_exact("before")
-    if sys.version_info >= (3, 13):
-        child.expect_exact("breakpoint")
-    child.expect_exact(prompt)
+    with PexpectLog(child, "test_integration"):
+        child.expect_exact("before")
+        if sys.version_info >= (3, 13):
+            child.expect_exact("breakpoint")
+        child.expect_exact(prompt)
 
-    # Completes help as unique (coming from pdb and fancycompleter).
-    child.send("hel\t")
-    if sys.version_info >= (3, 13):
-        child.expect_exact("help")
-    else:
-        child.expect_exact("\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
+        # Completes help as unique (coming from pdb and fancycompleter).
+        child.send("hel\t")
+        if sys.version_info >= (3, 13):
+            child.expect_exact("help")
+        else:
+            child.expect_exact("\x1b[1@h\x1b[1@e\x1b[1@l\x1b[1@p")
 
-    child.sendline()
-    child.expect_exact("Documented commands")
-    child.expect_exact(prompt)
+        child.sendline()
+        child.expect_exact("Documented commands")
+        child.expect_exact(prompt)
 
-    # Completes breakpoints via pdb, should not contain "\t" from
-    # fancycompleter.
-    child.send(b"b \t")
-    if sys.version_info < (3, 14):
-        child.expect(b"b.*test_file.py:")
-    else:
-        child.expect_exact("\x1b[0mb test_file\x1b[0m.\x1b[0mpy\x1b[0m:")
+        # Completes breakpoints via pdb, should not contain "\t" from
+        # fancycompleter.
+        child.send(b"b \t")
+        if sys.version_info < (3, 14):
+            child.expect(b"b.*test_file.py:")
+        else:
+            child.expect_exact("\x1b[0mb test_file\x1b[0m.\x1b[0mpy\x1b[0m:")
 
-    child.sendline()
-    child.sendline("c")
-    child.expect("after")
-    child.expect(pexpect.EOF)
+        child.sendline()
+        child.sendline("c")
+        child.expect("after")
+        child.expect(pexpect.EOF)
 
 
 def test_ipython(testdir):
@@ -69,15 +98,16 @@ def test_ipython(testdir):
         f"{sys.executable} -m IPython --colors=nocolor --simple-prompt",
         expect_timeout=1,
     )
-    child.sendline("%debug raise ValueError('my_value_error')")
-    child.sendline("up")
-    child.expect_exact("ipdb++> ")
-    child.sendline("c")
-    child.expect_exact("ValueError: my_value_error")
-    child.expect_exact("In [2]: ")
-    child.sendeof()
-    child.sendline("y")
-    assert child.wait() == 0
+    with PexpectLog(child, "test_ipython"):
+        child.sendline("%debug raise ValueError('my_value_error')")
+        child.sendline("up")
+        child.expect_exact("ipdb++> ")
+        child.sendline("c")
+        child.expect_exact("ValueError: my_value_error")
+        child.expect_exact("In [2]: ")
+        child.sendeof()
+        child.sendline("y")
+        assert child.wait() == 0
 
 
 def test_hijacking():

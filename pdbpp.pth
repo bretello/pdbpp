@@ -1,0 +1,8 @@
+# This script is used by Python's site module.
+# Doc: https://docs.python.org/3/library/site.html
+# Code: https://github.com/blueyed/cpython/blob/1b293b600/Lib/site.py#L148-L187
+#
+# See `setup.py` for a similar setup for editable installs.
+#
+# on python startup, trigger hijack_pdb() on python <3.15 
+import pdbpp_utils.__hacks__; pdbpp_utils.__hacks__.hijack_pdb()

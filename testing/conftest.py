@@ -128,11 +128,15 @@ def monkeypatch_readline(monkeypatch, readline_param):
     def inner(line, begidx, endidx):
         if readline_param == "pyrepl":
             readline = "pyrepl.readline"
-        elif readline_param == "_pyrepl":
-            readline = "_pyrepl.readline"
+        elif readline_param in ("_pyrepl", "readline"):
+            if sys.version_info >= (3, 15):
+                # pdb uses pyrepl for input, there is no other readline
+                # involved (the standalone fancycompleter is not used).
+                readline = "_pyrepl.readline"
+            else:
+                readline = "readline" if readline_param == "readline" else "_pyrepl.readline"
         else:
-            assert readline_param == "readline"
-            readline = "readline"
+            raise AssertionError(readline_param)
 
         monkeypatch.setattr(f"{readline}.get_line_buffer", lambda: line)
         monkeypatch.setattr(f"{readline}.get_begidx", lambda: begidx)
@@ -159,7 +163,14 @@ def monkeypatch_pdb_methods(monkeypatch):
 def patched_completions(monkeypatch):
     import fancycompleter
 
+    from pdbpp_utils import _completer_adapter
+
     from .test_pdb import PdbTest
+
+    if sys.version_info >= (3, 15):
+        fancy_completer_cls = _completer_adapter.get_completer({}).__class__
+    else:
+        fancy_completer_cls = fancycompleter.Completer
 
     def inner(text, fancy_comps, pdb_comps):
         _pdb = PdbTest()
@@ -168,7 +179,7 @@ def patched_completions(monkeypatch):
         _pdb.forget = lambda: None
 
         def _get_comps(complete, text):
-            if isinstance(complete.__self__, fancycompleter.Completer):
+            if isinstance(complete.__self__, fancy_completer_cls):
                 return fancy_comps[:]
             return pdb_comps[:]
 

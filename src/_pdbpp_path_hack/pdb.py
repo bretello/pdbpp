@@ -1,6 +1,6 @@
 """Hijack the stdlib pdb module on import.
 
-This gets inserted to the beginning of sys.path via pdbpp_hijack_pdb.pth.
+This gets inserted to the beginning of sys.path via pdbpp.start & pdbpp.pth.
 
 You can set PDBPP_HIJACK_PDB=0 as an environment variable to skip it.
 """

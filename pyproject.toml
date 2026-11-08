@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Programming Language :: Python",
@@ -29,7 +31,7 @@ classifiers = [
 ]
 keywords = ["pdb", "debugger", "tab", "color", "completion"]
 dependencies = [
-    "fancycompleter>=0.11.0",
+    "fancycompleter>=0.11.0; python_version < '3.15'",
     "pygments",
 ]
 

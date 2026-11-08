@@ -27,13 +27,12 @@ from functools import lru_cache
 from inspect import signature
 from io import StringIO
 
-import fancycompleter
-from fancycompleter import Color, Completer, ConfigurableClass
+from pdbpp_utils import __version__, completer_adapter
+from pdbpp_utils.completer_adapter import Color, ConfigurableClass
 
 __author__ = "Antonio Cuni <anto.cuni@gmail.com>"
 __maintainer__ = "bretello <bretello@distruzione.org"
 __url__ = "http://github.com/bretello/pdbpp"
-from pdbpp_utils import __version__
 
 # If it contains only _, digits, letters, [] or dots, it's probably side
 # effects free.
@@ -321,6 +320,26 @@ class PdbMeta(type):
         return called_for_set_trace
 
 
+class _PyreplReadlineShim:
+    """Proxy for `readline` on 3.15+"""
+
+    def __init__(self, readline, readline_wrapper):
+        self._readline = readline
+        self._readline_wrapper = readline_wrapper
+
+    def get_line_buffer(self):
+        return self._readline_wrapper.get_line_buffer()
+
+    def get_begidx(self):
+        return self._readline_wrapper.get_begidx()
+
+    def get_endidx(self):
+        return self._readline_wrapper.get_endidx()
+
+    def __getattr__(self, name):
+        return getattr(self._readline, name)
+
+
 class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
     DefaultConfig = DefaultConfig
     config_filename = ".pdbrc.py"
@@ -346,6 +365,11 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         kwargs = self.config.default_pdb_kwargs.copy()
         kwargs.update(**kwds)
         super().__init__(*args, **kwargs)
+
+        if sys.version_info >= (3, 15) and self.pyrepl_input is not None:
+            # pdb uses pyrepl as its input console on 3.15 (GH-145378),
+            # switch its completion to pdbpp's
+            self.pyrepl_input.complete = self.complete
         self.prompt = self.config.prompt
         self.display_list = {}  # frame --> (name --> last seen value)
         self.tb_lineno = {}  # frame --> lineno where the exception raised
@@ -524,16 +548,9 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
     def _setup_fancycompleter(self):
         """Similar to fancycompleter.setup(), but returning the old completer."""
         if not self.fancycompleter:
-            self.fancycompleter = Completer(namespace={})
-        completer = self.fancycompleter
-        readline = completer.config.readline
-        old_completer = readline.get_completer()
-        if fancycompleter.has_libedit(completer.config):
-            readline.parse_and_bind("bind ^I rl_complete")
-        else:
-            readline.parse_and_bind("tab: complete")
-        readline.set_completer(self.complete)
-        return old_completer
+            self.fancycompleter = completer_adapter.get_completer(namespace={})
+
+        return completer_adapter.setup(self.fancycompleter, self.complete)
 
     @contextlib.contextmanager
     def _custom_completer(self):
@@ -543,7 +560,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
         try:
             yield
         finally:
-            self.fancycompleter.config.readline.set_completer(old_completer)
+            completer_adapter.restore(self.fancycompleter, old_completer)
 
     def print_hidden_frames_count(self):
         n = len(self._hidden_frames)
@@ -648,15 +665,23 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
     @contextlib.contextmanager
     def _patch_readline_for_pyrepl(self):
         """Patch readline module used in original Pdb.complete."""
-        uses_pyrepl = self.fancycompleter.config.readline != sys.modules["readline"]
-
-        if not uses_pyrepl:
+        if not completer_adapter.uses_pyrepl(self.fancycompleter):
             yield
             return
 
+        readline = completer_adapter.readline_module(self.fancycompleter)
+        if sys.version_info >= (3, 15):
+            # In this case, the line buffer lives in pdbp's private
+            # pyrepl, so we need to have a proxy for that
+            readline_wrapper = getattr(
+                getattr(self, "pyrepl_input", None), "readline_wrapper", None
+            )
+            if readline_wrapper is not None:
+                readline = _PyreplReadlineShim(readline, readline_wrapper)
+
         # Make pdb.Pdb.complete use pyrepl's readline.
         orig_readline = sys.modules["readline"]
-        sys.modules["readline"] = self.fancycompleter.config.readline
+        sys.modules["readline"] = readline
         try:
             yield
         finally:
@@ -680,18 +705,10 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
             # Get completions from fancycompleter.
             f_globals = self.curframe.f_globals.copy()
             f_globals.update(self.curframe_locals)
-            completer = Completer(f_globals)
+            completer = completer_adapter.get_completer(f_globals)
             completions = self._get_all_completions(completer.complete, text)
 
-            if self.fancycompleter.config.use_colors:
-                clean_fancy_completions = set(
-                    [
-                        RE_REMOVE_FANCYCOMPLETER_ESCAPE_SEQS.sub("", x)
-                        for x in completions
-                    ]
-                )
-            else:
-                clean_fancy_completions = completions
+            clean_fancy_completions = set(completer_adapter.clean_matches(completions))
 
             # Get completions from original pdb.
             pdb_completions = []
@@ -708,7 +725,7 @@ class Pdb(pdb.Pdb, ConfigurableClass, metaclass=PdbMeta):
 
             self._completions = completions
             if pdb_completions:
-                pdb_prefix = fancycompleter.commonprefix(pdb_completions)
+                pdb_prefix = completer_adapter.commonprefix(pdb_completions)
                 if "." in text and pdb_prefix and len(pdb_completions) > 1:
                     # Remove prefix for attr_matches from pdb completions.
                     dotted = text.split(".")

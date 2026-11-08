@@ -31,7 +31,7 @@ classifiers = [
 ]
 keywords = ["pdb", "debugger", "tab", "color", "completion"]
 dependencies = [
-    "fancycompleter>=0.11.0",
+    "fancycompleter>=0.11.0; python_version < '3.15'",
     "pygments",
 ]
 

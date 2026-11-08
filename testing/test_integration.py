@@ -76,7 +76,13 @@ def test_integration(pytester, readline_param):
         # Completes breakpoints via pdb, should not contain "\t" from
         # fancycompleter.
         child.send(b"b \t")
-        if sys.version_info < (3, 14):
+        if sys.version_info >= (3, 15):
+            # pdb uses pyrepl as its input console (GH-145378), which does
+            # not complete an empty stem on tab, but indents instead.
+            # Complete the file name with a non-empty stem.
+            child.send(b"test_f\t")
+            child.expect(b"ile\x1b\\[0m\\.\x1b\\[0mpy\x1b\\[0m:")
+        elif sys.version_info < (3, 14):
             child.expect(b"b.*test_file.py:")
         else:
             child.expect_exact("\x1b[0mb test_file\x1b[0m.\x1b[0mpy\x1b[0m:")

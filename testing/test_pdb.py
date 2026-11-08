@@ -22,6 +22,7 @@ from pygments import __version__ as pygments_version
 
 import pdbpp
 from pdbpp import DefaultConfig, Pdb, StringIO
+from pdbpp_utils import _completer_adapter
 
 pygments_major, pygments_minor, _ = pygments_version.split(".")
 
@@ -984,7 +985,8 @@ def test_global_pdb_can_be_skipped():
             [NUM] .*set_trace()
             -> assert pdbpp.local.GLOBAL_PDB is not self
                5 frames hidden .*
-            # readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+            # from pdbpp_utils import _completer_adapter as _ca
+            # readline_ = _ca.readline_module(pdbpp.local.GLOBAL_PDB.fancycompleter)
             # assert readline_.get_completer() != pdbpp.local.GLOBAL_PDB.complete
             # c
             [NUM] > .*fn()
@@ -1006,7 +1008,8 @@ def test_global_pdb_can_be_skipped():
             [NUM] .*set_trace()
             -> assert pdbpp.local.GLOBAL_PDB is not self
                5 frames hidden .*
-            # readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+            # from pdbpp_utils import _completer_adapter as _ca
+            # readline_ = _ca.readline_module(pdbpp.local.GLOBAL_PDB.fancycompleter)
             # assert readline_.get_completer() != pdbpp.local.GLOBAL_PDB.complete
             # c
             [NUM] > .*fn()
@@ -1090,7 +1093,8 @@ def test_global_pdb_can_be_skipped_but_set():
         [NUM] .*set_trace()
         -> assert pdbpp.local.GLOBAL_PDB is self
            5 frames hidden .*
-        # readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+        # from pdbpp_utils import _completer_adapter as _ca
+        # readline_ = _ca.readline_module(pdbpp.local.GLOBAL_PDB.fancycompleter)
         # assert readline_.get_completer() == pdbpp.local.GLOBAL_PDB.complete
         # c
         new_set_trace
@@ -1113,7 +1117,8 @@ def test_global_pdb_can_be_skipped_but_set():
             [NUM] .*set_trace()
             -> assert pdbpp.local.GLOBAL_PDB is self
                5 frames hidden .*
-            # readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+            # from pdbpp_utils import _completer_adapter as _ca
+            # readline_ = _ca.readline_module(pdbpp.local.GLOBAL_PDB.fancycompleter)
             # assert readline_.get_completer() == pdbpp.local.GLOBAL_PDB.complete
             # c
             new_set_trace
@@ -5747,7 +5752,9 @@ def test_python_m_pdb_uses_pdbpp_and_env(PDBPP_HIJACK_PDB, monkeypatch, tmpdir):
 
 def get_completions(text):
     """Get completions from the installed completer."""
-    readline_ = pdbpp.local.GLOBAL_PDB.fancycompleter.config.readline
+    readline_ = _completer_adapter.readline_module(
+        pdbpp.local.GLOBAL_PDB.fancycompleter
+    )
     complete = readline_.get_completer()
     comps = []
     assert complete.__self__ is pdbpp.local.GLOBAL_PDB
@@ -5759,6 +5766,10 @@ def get_completions(text):
     return comps
 
 
+@pytest.mark.xfail(
+    sys.version_info >= (3, 15),
+    reason="The stdlib completer does not evaluate properties during completion",
+)
 def test_set_trace_in_completion(readline_param, monkeypatch_readline):
     def fn():
         class CompleteMe:
@@ -5923,7 +5934,12 @@ def test_complete_removes_duplicates_with_coloring(
             # Patch readline to return expected results for "help".
             monkeypatch_readline("help", 0, 4)
 
-            if "pyrepl" in readline_param:
+            if sys.version_info >= (3, 15):
+                # The stdlib completer (via pdbpp_utils._completer_adapter)
+                # is used, without the coloring config of the standalone
+                # fancycompleter.
+                assert get_completions("help") == ["help", "helpvar"]
+            elif "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("help") == [
                     "\x1b[000;00m\x1b[00mhelp\x1b[00m",
@@ -5936,7 +5952,13 @@ def test_complete_removes_duplicates_with_coloring(
 
             # Patch readline to return expected results for "p helpvar.".
             monkeypatch_readline("p helpvar.", 2, 10)
-            if "pyrepl" in readline_param:
+            if sys.version_info >= (3, 15):
+                comps = get_completions("helpvar.")
+                assert isinstance(helpvar.denominator, int)
+                # pdb's completions are not stripped of the prefix on 3.15.
+                assert "helpvar.denominator" in comps
+                assert " " not in comps
+            elif "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 comps = get_completions("helpvar.")
                 assert isinstance(helpvar.denominator, int)
@@ -5953,11 +5975,18 @@ def test_complete_removes_duplicates_with_coloring(
 
             monkeypatch_readline("p obj.f", 2, 7)
             comps = get_completions("obj.f")
-            assert comps == ["obj.foo"]
+            if sys.version_info >= (3, 15):
+                # The common prefix is completed on 3.15.
+                assert comps == ["obj.foo"]
+            else:
+                assert comps == ["obj.foo"]
 
             monkeypatch_readline("p obj.foo", 2, 9)
             comps = get_completions("obj.foo")
-            if "pyrepl" in readline_param:
+            if sys.version_info >= (3, 15):
+                # pdb's completions are not stripped of the prefix on 3.15.
+                assert comps == ["obj.foo", "obj.foobar"]
+            elif "pyrepl" in readline_param:
                 assert comps == [
                     "\x1b[000;00m\x1b[33;01mfoo\x1b[00m",
                     "\x1b[001;00m\x1b[33;01mfoobar\x1b[00m",
@@ -6061,7 +6090,16 @@ def test_complete_uses_attributes_only_from_orig_pdb(
             # Patch readline to return expected results for "p sys.version".
             monkeypatch_readline("p sys.version", 2, 13)
 
-            if "pyrepl" in readline_param:
+            if sys.version_info >= (3, 15):
+                # The stdlib completer (via pdbpp_utils._completer_adapter)
+                # is used, without the coloring config of the standalone
+                # fancycompleter.
+                # pdb's completions are not stripped of the prefix on 3.15.
+                assert get_completions("sys.version") == [
+                    "sys.version",
+                    "sys.version_info",
+                ]
+            elif "pyrepl" in readline_param:
                 assert pdbpp.local.GLOBAL_PDB.fancycompleter.config.use_colors is True
                 assert get_completions("sys.version") == [
                     "\x1b[000;00m\x1b[32;01mversion\x1b[00m",
@@ -6247,6 +6285,10 @@ ok_end
 @pytest.mark.xfail(
     (((3, 9) < sys.version_info < (3, 11)) and "libedit" in readline.__doc__),
     reason="Flaky, depending on the readline implementation (GNU readline vs libedit) ",
+)
+@pytest.mark.xfail(
+    sys.version_info >= (3, 15),
+    reason="Nested interactions complete against the outer pdb instance with pyrepl input (GH-145378)",
 )
 def test_nested_completer(testdir):
     has_libedit = "libedit" in readline.__doc__
